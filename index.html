@@ -62,7 +62,7 @@
     .btn.ghost{background:#eef2ff; color:#1e40af}
     .btn:disabled{opacity:.6; cursor:not-allowed}
     .status{font-size:12px; margin-top:6px}
-    .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+    .status.ok{Color:var(--ok)} .status.err{color:var(--err)}
 
     /* ===== TOOLBAR ===== */
     .toolbar{
@@ -114,7 +114,7 @@
   body{margin:0;background:#f1f5f9;font-family:Inter,system-ui,Avenir,Helvetica,Arial,sans-serif}
   .container{max-width:1280px;margin:18px auto;padding:12px}
   .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .header h2{margin:0;font-size:20px;font-weight:800;color:#0f172a}
+  .header h2{margin:0;font-size:20px;font-weight:800;color:#0f172a'}
   .header .total{font-weight:900;color:#c1121f}
   .toolbar{display:grid;grid-template-columns:200px 200px 220px 140px 1fr;gap:10px;align-items:end;margin-bottom:10px}
   .toolbar label{font-size:12px;color:#475569;display:block;margin-bottom:4px}
@@ -204,8 +204,12 @@
     <div class="section">
       <h3 class="section-title">Thao tác</h3>
       <div class="row">
-        <button id="btnFetch" class="btn">Lấy dữ liệu</button>
-        <button id="btnClear" class="btn secondary">Xoá kết quả</button>
+        <div>
+          <button id="btnFetch" class="btn">Lấy dữ liệu</button>
+        </div>
+        <div>
+          <button id="btnClear" class="btn secondary">Xoá kết quả</button>
+        </div>
       </div>
     </div>
   </aside>
@@ -261,12 +265,14 @@ function toCSV(rows){
   const cols = Object.keys(rows[0]);
   const esc = v => `"${String(v??"").replace(/"/g,'""')}"`;
   const head = cols.map(esc).join(",");
-  const body = rows.map(r => cols.map(c => esc(r[c])).join(",")).join("\n");
-  return head+"\n"+body;
+  const body = rows.map(r => cols.map(c => esc(r[c])).join(",")).join("
+");
+  return head+"
+"+body;
 }
 function downloadCSV(rows){
   const csv = toCSV(rows);
-  const bom = '\uFEFF';
+  const bom = '﻿';
   const blob = new Blob([bom, csv], {type: 'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -626,9 +632,19 @@ async function init(){
     if(!indices.length){ alert('Hãy chọn ít nhất 1 trạm.'); return; }
 
     const tinhtong=$('#tinhtong').checked?1:0;
-    if(tinhtong===1){ s.setHours(0,0,0,0); e.setHours(23,59,0,0);
-      $('#startDt').value=toLocalDT(s); $('#endDt').value=toLocalDT(e);
-    }
+
+    // IMPORTANT CHANGE: do NOT override the user-selected hour/minute.
+    // Previously code forced start to 00:00 when tinhtong===1 which caused the bug
+    // described by anh (chọn 13:00 nhưng fetch từ 00:00). Now we respect the
+    // exact datetime-local value the user selected. If server expects daily
+    // aggregation, it still receives tinhtong=1 and can aggregate by date server-side.
+
+    // If you still want to force full-day range when tinhtong is enabled,
+    // uncomment the following block. For now we keep user's precise times:
+    // if(tinhtong===1){ s.setHours(0,0,0,0); e.setHours(23,59,0,0);
+    //   $('#startDt').value=toLocalDT(s); $('#endDt').value=toLocalDT(e);
+    // }
+
     const fmt=(dt)=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
     const sStr=fmt(s), eStr=fmt(e);
 
