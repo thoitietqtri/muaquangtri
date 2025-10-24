@@ -133,6 +133,9 @@
   .rain-table tbody tr:nth-child(odd) td{background:#fcfcfd}
   .rain-table tfoot td{font-weight:900;color:#c1121f;background:#fff5f5}
   .mm-black{color:#111827;font-weight:700}.mm-green{color:#16a34a;font-weight:800}.mm-purple{color:#7c3aed;font-weight:800}.mm-red{color:#dc2626;font-weight:900}
+  .agg-table{width:100%;border-collapse:collapse}
+  .agg-table th,.agg-table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
+  .agg-table thead th{background:#f8fafc;font-weight:800}
   @media (max-width:1100px){.layout{grid-template-columns:1fr}.right-pane{position:static}}
   </style>
 
@@ -208,6 +211,17 @@
         <button id="btnClear" class="btn secondary">Xoá kết quả</button>
       </div>
     </div>
+
+    <!-- Tuỳ chọn hiển thị tổng hợp -->
+    <div class="section">
+      <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h)</label>
+      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn.</div>
+      <div style="margin-top:8px">
+        <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
+      </div>
+    </div>
+
   </aside>
 
   <!-- ===== MAIN ===== -->
@@ -231,10 +245,16 @@
           </table>
         </div>
 
-        <!-- Chart box -->
-        <div id="chartBox" class="card" style="min-height:360px">
-          <div style="font-size:12px;color:#64748b">
-            Chưa có dữ liệu để vẽ đồ thị.
+        <!-- Chart + Aggregates box -->
+        <div id="rightBox" class="card" style="min-height:360px; display:flex;flex-direction:column;gap:10px">
+          <div id="chartBox" style="min-height:200px;padding:8px;">
+            <div style="font-size:12px;color:#64748b">Chưa có dữ liệu để vẽ đồ thị.</div>
+          </div>
+
+          <!-- Aggregates table (mới) -->
+          <div id="aggBox" style="padding:8px;background:#fff;border-radius:8px;border:1px solid #eef2f6;overflow:auto">
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h)</div>
+            <div id="aggTableHolder" style="max-height:240px; overflow:auto"></div>
           </div>
         </div>
       </div>
@@ -255,6 +275,8 @@ const toLocalDatetimeValue = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${p
 const quote = s => `'${s}'`;
 function buildProxyUrl(p){ return `${API_PROXY}?` + new URLSearchParams(p).toString(); }
 
+function safeNum(v){ const n=Number(String(v??'').toString().replace(',','.')); return isFinite(n)?n:NaN; }
+
 /* CSV/XLSX Export */
 function toCSV(rows){
   if(!rows?.length) return "";
@@ -264,13 +286,13 @@ function toCSV(rows){
   const body = rows.map(r => cols.map(c => esc(r[c])).join(",")).join("\n");
   return head+"\n"+body;
 }
-function downloadCSV(rows){
+function downloadCSV(rows, filename='rain_ketqua.csv'){
   const csv = toCSV(rows);
   const bom = '\uFEFF';
   const blob = new Blob([bom, csv], {type: 'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = 'rain_ketqua.csv';
+  a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
@@ -359,6 +381,8 @@ function renderTable(rows){
     $('#summary').textContent='Không có dữ liệu để hiển thị.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);  // dọn chart
+    $('#btnExportAgg').disabled = true;
+    $('#aggTableHolder').innerHTML = '';
     return;
   }
 
@@ -458,6 +482,39 @@ function setDateLimits(){
   if (new Date(endEl.value) > now) endEl.value = toLocalDT(now);
 }
 
+/* ===== Parse time robustly ===== */
+function parseTimeString(t){
+  if(!t && t!==0) return null;
+  // Try common patterns
+  // 1) If t already Date
+  if (t instanceof Date) return t;
+  let s = String(t).trim();
+  if (!s) return null;
+
+  // Replace common separators and ensure seconds exist
+  // Accept formats: "YYYY-MM-DD HH:MM:SS", "YYYY/MM/DD HH:MM", "DD/MM/YYYY HH:MM", ISO...
+  // Heuristic: if starts with 4-digit year -> treat as yyyy-mm-dd
+  try {
+    // if contains '/' and first part length==2 likely dd/mm/yyyy -> convert to yyyy-mm-dd
+    if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+      const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
+      // rebuild as yyyy-mm-dd HH:MM:SS if time exists
+      const timePart = rest.length? (' ' + rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')): '';
+      s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${timePart}`;
+    }
+    // If contains '-' and starts with 4-digit => likely ISO-ish; ensure 'T' replaced with space
+    s = s.replace('T',' ').replace(/\.\d+$/,''); // drop ms
+    // If no seconds, add :00
+    const dtParts = s.split(' ');
+    if (dtParts.length === 2 && dtParts[1].split(':').length === 2) s = s + ':00';
+    const dObj = new Date(s);
+    if (!isNaN(dObj.getTime())) return dObj;
+  } catch(e){ }
+  // final fallback: Date.parse
+  const d2 = new Date(Date.parse(s));
+  return isNaN(d2.getTime())? null : d2;
+}
+
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
 function renderChart(rows){
   const host = $('#chartBox');
@@ -496,9 +553,6 @@ function renderChart(rows){
     }
     return { name, total: Number(sum.toFixed(1)) };
   });
-
-  // (tuỳ chọn) sắp xếp giảm dần
-  // totals.sort((a,b)=>b.total - a.total);
 
   const title = document.createElement('div');
   title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
@@ -597,6 +651,110 @@ function renderChart(rows){
   svg.appendChild(axis);
 }
 
+/* ====== AGGREGATES (1h/3h/6h) ======
+   We'll compute for each station series:
+   - total over period
+   - max sliding-window sum over windows 60, 180, 360 minutes
+   Implementation:
+   - Convert series timestamps -> Date
+   - For each timestamp as window-end, sum values with time > end - windowMinutes
+   - Use efficient two-pointer on sorted series
+*/
+
+/* Convert pivot rows into per-station series [{t:Date, v:number}, ...] */
+function buildSeriesFromRows(rows){
+  if(!rows?.length) return {};
+  const cols = Object.keys(rows[0]);
+  const timeCol =
+    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
+    cols.find(c => /time|date|ngay/i.test(c)) ||
+    cols[0];
+  const stationCols = cols.filter(c => c !== timeCol);
+  const series = {};
+  for(const name of stationCols) series[name] = [];
+  for(const r of rows){
+    const tRaw = r[timeCol];
+    const t = parseTimeString(tRaw);
+    if(!t) continue;
+    for(const name of stationCols){
+      const v = safeNum(r[name]);
+      if (!isFinite(v)) continue; // skip non-numeric
+      series[name].push({ t, v });
+    }
+  }
+  // sort each
+  for(const k of Object.keys(series)){
+    series[k].sort((a,b)=>a.t - b.t);
+  }
+  return series;
+}
+
+/* sliding window sums using two pointers, window in minutes */
+function slidingWindowSums(series, windowMinutes){
+  // input: series sorted by t ascending [{t:Date, v}]
+  // output: array of sums where each sum corresponds to window ending at series[i].t
+  const n = series.length;
+  const sums = new Array(n).fill(0);
+  if(n===0) return sums;
+  const windowMs = windowMinutes * 60 * 1000;
+  let left = 0;
+  let curSum = 0;
+  for(let right=0; right<n; right++){
+    curSum += series[right].v;
+    // move left until window fits: include points with t > series[right].t - windowMs
+    while(left <= right && (series[right].t - series[left].t) >= windowMs){
+      curSum -= series[left].v;
+      left++;
+    }
+    sums[right] = curSum;
+  }
+  return sums;
+}
+
+/* compute aggregates for one station series */
+function computeStationAggregates(series){ // series: [{t,v},...]
+  // total over series
+  const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
+  // sliding sums
+  const sums1h = slidingWindowSums(series, 60);
+  const sums3h = slidingWindowSums(series, 180);
+  const sums6h = slidingWindowSums(series, 360);
+  const max1h = sums1h.length? Math.max(...sums1h) : 0;
+  const max3h = sums3h.length? Math.max(...sums3h) : 0;
+  const max6h = sums6h.length? Math.max(...sums6h) : 0;
+  return {
+    total: Number(total.toFixed(1)),
+    max1h: Number(max1h.toFixed(1)),
+    max3h: Number(max3h.toFixed(1)),
+    max6h: Number(max6h.toFixed(1))
+  };
+}
+
+/* Render aggregates table in aggBox -> aggTableHolder */
+function renderAggregatesTable(aggregates){
+  const holder = $('#aggTableHolder');
+  if(!aggregates || !Object.keys(aggregates).length){ holder.innerHTML = '<div style="color:#64748b;font-size:13px">Không có dữ liệu tổng hợp.</div>'; $('#btnExportAgg').disabled = true; window.__lastAgg = []; return; }
+  const rows = Object.keys(aggregates).map(name => {
+    const a = aggregates[name];
+    return {
+      trạm: name,
+      'Tổng (mm)': a.total,
+      'Max 1h (mm)': a.max1h,
+      'Max 3h (mm)': a.max3h,
+      'Max 6h (mm)': a.max6h
+    };
+  });
+  // build html table
+  let html = '<table class="agg-table"><thead><tr><th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th></tr></thead><tbody>';
+  for(const r of rows){
+    html += `<tr><td>${r['trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h (mm)']}</td><td>${r['Max 3h (mm)']}</td><td>${r['Max 6h (mm)']}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  holder.innerHTML = html;
+  $('#btnExportAgg').disabled = false;
+  window.__lastAgg = rows;
+}
+
 /* ===== MAIN FLOW ===== */
 async function init(){
   // mặc định: start = 00:00 của 2 ngày trước; end = now
@@ -627,18 +785,7 @@ async function init(){
 
     const tinhtong=$('#tinhtong').checked?1:0;
 
-    // ---------- IMPORTANT: giữ nguyên giờ:phút do người dùng chọn ----------
-    // Trước đây code ép s.setHours(0,0,0,0) khi tinhtong===1, khiến giờ bị mất.
-    // Để tôn trọng mong muốn người dùng (ví dụ chọn 13:00 thì gửi 13:00),
-    // MÌNH ĐÃ LOẠI BỎ (COMMENT) ĐOẠN ÉP NGÀY DƯỚI ĐÂY:
-    /*
-    if(tinhtong===1){ s.setHours(0,0,0,0); e.setHours(23,59,0,0);
-      $('#startDt').value=toLocalDT(s); $('#endDt').value=toLocalDT(e);
-    }
-    */
-    // Nếu anh muốn bật lại hành vi ép về 00:00 khi tick 'Tính tổng theo ngày' thì
-    // chỉ cần bỏ comment đoạn trên.
-
+    // giữ nguyên giờ:phút do người dùng chọn (theo yêu cầu)
     const fmt=(dt)=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
     const sStr=fmt(s), eStr=fmt(e);
 
@@ -661,7 +808,7 @@ async function init(){
       }
     }));
 
-    // pivot theo thời gian
+    // pivot theo thời gian (giữ nguyên key 'thoi gian' như trước)
     const timeIndex=new Map();
     const names=Object.keys(datasets);
     for(const n of names){
@@ -675,7 +822,22 @@ async function init(){
     }
     const rows=Array.from(timeIndex.values())
       .sort((a,b)=>String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
+
     renderTable(rows);
+
+    // ----- Compute aggregates (1h/3h/6h) -----
+    if($('#showAggregates').checked){
+      const seriesMap = buildSeriesFromRows(rows); // per station arrays
+      const aggs = {};
+      for(const name of Object.keys(seriesMap)){
+        aggs[name] = computeStationAggregates(seriesMap[name]);
+      }
+      renderAggregatesTable(aggs);
+    } else {
+      $('#aggTableHolder').innerHTML = '<div style="color:#64748b;font-size:13px">Tùy chọn hiển thị tổng hợp đang tắt.</div>';
+      $('#btnExportAgg').disabled = true;
+      window.__lastAgg = [];
+    }
   });
 
   $('#btnClear').addEventListener('click', ()=>{
@@ -684,11 +846,16 @@ async function init(){
     $('#summary').textContent='Đã xoá kết quả.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);
+    renderAggregatesTable({});
   });
 
   // Export
   $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
   $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
+  $('#btnExportAgg').addEventListener('click', ()=> {
+    const rows = window.__lastAgg || [];
+    if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
+  });
 
   try{ await tryAutoLoadExcel(); }
   catch(e){ $('#xlsxStatus').className='status'; $('#xlsxStatus').textContent='Không tìm thấy file mặc định. Hãy chọn file .xlsx thủ công.'; }
