@@ -102,6 +102,11 @@
       padding-right:36px; position:relative; z-index:31;
     }
 
+    /* ===== AGGREGATE table inside chartBox (kept minimal, reuse rain-table look) ===== */
+    .agg-table{width:100%;border-collapse:collapse;margin-top:8px}
+    .agg-table th,.agg-table td{padding:7px 8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
+    .agg-table thead th{background:#f8fafc;font-weight:800}
+
     @media (max-width:1100px){
       .shell{grid-template-columns:1fr}
       .toolbar{top:calc(64px + 8px)}
@@ -133,9 +138,6 @@
   .rain-table tbody tr:nth-child(odd) td{background:#fcfcfd}
   .rain-table tfoot td{font-weight:900;color:#c1121f;background:#fff5f5}
   .mm-black{color:#111827;font-weight:700}.mm-green{color:#16a34a;font-weight:800}.mm-purple{color:#7c3aed;font-weight:800}.mm-red{color:#dc2626;font-weight:900}
-  .agg-table{width:100%;border-collapse:collapse}
-  .agg-table th,.agg-table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
-  .agg-table thead th{background:#f8fafc;font-weight:800}
   @media (max-width:1100px){.layout{grid-template-columns:1fr}.right-pane{position:static}}
   </style>
 
@@ -212,11 +214,11 @@
       </div>
     </div>
 
-    <!-- Tuỳ chọn hiển thị tổng hợp -->
+    <!-- Thêm cấu phần tuỳ chọn tổng hợp (nhỏ, không thay đổi giao diện) -->
     <div class="section">
       <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
-      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h)</label>
-      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn.</div>
+      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h & 6h-blocks)</label>
+      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn; 6h-blocks là các khung 6h không chồng chéo bắt đầu từ startDt.</div>
       <div style="margin-top:8px">
         <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
       </div>
@@ -245,16 +247,19 @@
           </table>
         </div>
 
-        <!-- Chart + Aggregates box -->
-        <div id="rightBox" class="card" style="min-height:360px; display:flex;flex-direction:column;gap:10px">
-          <div id="chartBox" style="min-height:200px;padding:8px;">
-            <div style="font-size:12px;color:#64748b">Chưa có dữ liệu để vẽ đồ thị.</div>
+        <!-- Chart box + agregates (giữ nguyên giao diện, thêm phần tổng hợp trong box này) -->
+        <div id="chartBox" class="card" style="min-height:360px; padding:12px;">
+          <div id="chartInner" style="font-size:12px;color:#64748b">
+            Chưa có dữ liệu để vẽ đồ thị.
           </div>
 
-          <!-- Aggregates table (mới) -->
-          <div id="aggBox" style="padding:8px;background:#fff;border-radius:8px;border:1px solid #eef2f6;overflow:auto">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h)</div>
-            <div id="aggTableHolder" style="max-height:240px; overflow:auto"></div>
+          <!-- AGGREGATES AREA: hiển thị bảng tổng hợp  và 6h-blocks -->
+          <div id="aggArea" style="margin-top:12px; display:none">
+            <div style="margin-bottom:8px; font-weight:800; color:#0f172a">Bảng tổng hợp</div>
+            <div id="aggSummaryHolder"></div>
+
+            <div style="margin-top:12px; font-weight:800; color:#0f172a">Bảng 6h (khung không chồng chéo; bắt đầu từ startDt)</div>
+            <div id="matrixHolder" style="margin-top:6px; overflow:auto"></div>
           </div>
         </div>
       </div>
@@ -381,8 +386,9 @@ function renderTable(rows){
     $('#summary').textContent='Không có dữ liệu để hiển thị.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);  // dọn chart
+    // hide aggregates area
+    $('#aggArea').style.display = 'none';
     $('#btnExportAgg').disabled = true;
-    $('#aggTableHolder').innerHTML = '';
     return;
   }
 
@@ -482,42 +488,31 @@ function setDateLimits(){
   if (new Date(endEl.value) > now) endEl.value = toLocalDT(now);
 }
 
-/* ===== Parse time robustly ===== */
+/* ===== Parse time robustly (for different formats) ===== */
 function parseTimeString(t){
   if(!t && t!==0) return null;
-  // Try common patterns
-  // 1) If t already Date
   if (t instanceof Date) return t;
   let s = String(t).trim();
   if (!s) return null;
-
-  // Replace common separators and ensure seconds exist
-  // Accept formats: "YYYY-MM-DD HH:MM:SS", "YYYY/MM/DD HH:MM", "DD/MM/YYYY HH:MM", ISO...
-  // Heuristic: if starts with 4-digit year -> treat as yyyy-mm-dd
   try {
-    // if contains '/' and first part length==2 likely dd/mm/yyyy -> convert to yyyy-mm-dd
     if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
       const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
-      // rebuild as yyyy-mm-dd HH:MM:SS if time exists
       const timePart = rest.length? (' ' + rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')): '';
       s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${timePart}`;
     }
-    // If contains '-' and starts with 4-digit => likely ISO-ish; ensure 'T' replaced with space
-    s = s.replace('T',' ').replace(/\.\d+$/,''); // drop ms
-    // If no seconds, add :00
+    s = s.replace('T',' ').replace(/\.\d+$/,'');
     const dtParts = s.split(' ');
     if (dtParts.length === 2 && dtParts[1].split(':').length === 2) s = s + ':00';
     const dObj = new Date(s);
     if (!isNaN(dObj.getTime())) return dObj;
   } catch(e){ }
-  // final fallback: Date.parse
   const d2 = new Date(Date.parse(s));
   return isNaN(d2.getTime())? null : d2;
 }
 
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
 function renderChart(rows){
-  const host = $('#chartBox');
+  const host = $('#chartInner');
   host.innerHTML = '';
 
   // Không có dữ liệu
@@ -559,8 +554,8 @@ function renderChart(rows){
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
-  const W = host.clientWidth || 800;
-  const H = 360;
+  const W =  Math.max(600, host.clientWidth || 800);
+  const H = 260;
   const m = { l:50, r:16, t:12, b:90 };
   const innerW = W - m.l - m.r;
   const innerH = H - m.t - m.b;
@@ -569,8 +564,8 @@ function renderChart(rows){
   const y = v => m.t + innerH - (v / maxY) * innerH;
 
   const n = totals.length;
-  const slot = innerW / n;
-  const barW = Math.max(18, Math.min(52, slot * 0.7));
+  const slot = innerW / Math.max(n,1);
+  const barW = Math.max(12, Math.min(48, slot * 0.7));
   const x = i => m.l + i*slot + (slot - barW)/2;
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -651,17 +646,10 @@ function renderChart(rows){
   svg.appendChild(axis);
 }
 
-/* ====== AGGREGATES (1h/3h/6h) ======
-   We'll compute for each station series:
-   - total over period
-   - max sliding-window sum over windows 60, 180, 360 minutes
-   Implementation:
-   - Convert series timestamps -> Date
-   - For each timestamp as window-end, sum values with time > end - windowMinutes
-   - Use efficient two-pointer on sorted series
-*/
+/* ===== AGGREGATES: sliding windows + fixed 6h blocks ===== */
 
-/* Convert pivot rows into per-station series [{t:Date, v:number}, ...] */
+/* build per-station time series from pivot rows
+   returns { stationName: [{t:Date, v:Number}, ...], ... } */
 function buildSeriesFromRows(rows){
   if(!rows?.length) return {};
   const cols = Object.keys(rows[0]);
@@ -678,21 +666,19 @@ function buildSeriesFromRows(rows){
     if(!t) continue;
     for(const name of stationCols){
       const v = safeNum(r[name]);
-      if (!isFinite(v)) continue; // skip non-numeric
+      if (!isFinite(v)) continue;
       series[name].push({ t, v });
     }
   }
-  // sort each
+  // sort each series
   for(const k of Object.keys(series)){
     series[k].sort((a,b)=>a.t - b.t);
   }
   return series;
 }
 
-/* sliding window sums using two pointers, window in minutes */
+/* sliding window sums using two-pointer (ascending times) */
 function slidingWindowSums(series, windowMinutes){
-  // input: series sorted by t ascending [{t:Date, v}]
-  // output: array of sums where each sum corresponds to window ending at series[i].t
   const n = series.length;
   const sums = new Array(n).fill(0);
   if(n===0) return sums;
@@ -701,7 +687,6 @@ function slidingWindowSums(series, windowMinutes){
   let curSum = 0;
   for(let right=0; right<n; right++){
     curSum += series[right].v;
-    // move left until window fits: include points with t > series[right].t - windowMs
     while(left <= right && (series[right].t - series[left].t) >= windowMs){
       curSum -= series[left].v;
       left++;
@@ -711,48 +696,174 @@ function slidingWindowSums(series, windowMinutes){
   return sums;
 }
 
-/* compute aggregates for one station series */
-function computeStationAggregates(series){ // series: [{t,v},...]
-  // total over series
+/* latest-window sum ending at endTime (useful for "Tổng 3h/6h gần nhất") */
+function latestWindowSum(series, endTime, windowMinutes){
+  if(!series || !series.length) return 0;
+  const windowMs = windowMinutes * 60 * 1000;
+  const startMs = endTime.getTime() - windowMs;
+  let sum = 0;
+  for(let i=series.length-1;i>=0;i--){
+    const t = series[i].t.getTime();
+    if (t > endTime.getTime()) continue;
+    if (t <= startMs) break;
+    sum += series[i].v;
+  }
+  return Number(sum.toFixed(1));
+}
+
+/* compute station aggregates (total, max sliding 1h/3h/6h, latest 3h/6h) */
+function computeStationAggregates(series, endTime){
   const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
-  // sliding sums
-  const sums1h = slidingWindowSums(series, 60);
-  const sums3h = slidingWindowSums(series, 180);
-  const sums6h = slidingWindowSums(series, 360);
-  const max1h = sums1h.length? Math.max(...sums1h) : 0;
-  const max3h = sums3h.length? Math.max(...sums3h) : 0;
-  const max6h = sums6h.length? Math.max(...sums6h) : 0;
+  const max1h = (slidingWindowSums(series,60).length ? Math.max(...slidingWindowSums(series,60)) : 0);
+  const max3h = (slidingWindowSums(series,180).length ? Math.max(...slidingWindowSums(series,180)) : 0);
+  const max6h = (slidingWindowSums(series,360).length ? Math.max(...slidingWindowSums(series,360)) : 0);
+  const latest3h = latestWindowSum(series, endTime, 180);
+  const latest6h = latestWindowSum(series, endTime, 360);
   return {
     total: Number(total.toFixed(1)),
     max1h: Number(max1h.toFixed(1)),
     max3h: Number(max3h.toFixed(1)),
-    max6h: Number(max6h.toFixed(1))
+    max6h: Number(max6h.toFixed(1)),
+    latest3h,
+    latest6h
   };
 }
 
-/* Render aggregates table in aggBox -> aggTableHolder */
+/* compute fixed non-overlapping windows sums (windowMinutes), starting at startTime, until endTime */
+function computeFixedWindowSums(series, windowMinutes, startTime, endTime){
+  const results = [];
+  if(!startTime || !endTime) return results;
+  const windowMs = windowMinutes * 60 * 1000;
+  if(!Array.isArray(series)) series = [];
+  series.sort((a,b)=>a.t - b.t);
+  let curStart = new Date(startTime.getTime());
+  while (curStart.getTime() < endTime.getTime()) {
+    const curEnd = new Date(Math.min(curStart.getTime() + windowMs, endTime.getTime()));
+    let sum = 0;
+    for (let i=0;i<series.length;i++){
+      const tt = series[i].t.getTime();
+      if (tt >= curStart.getTime() && tt < curEnd.getTime()) sum += series[i].v;
+      if (tt >= curEnd.getTime()) break;
+    }
+    results.push({ start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1)) });
+    curStart = new Date(curStart.getTime() + windowMs);
+  }
+  return results;
+}
+
+/* Render aggregates summary (as a simple table) into aggSummaryHolder */
 function renderAggregatesTable(aggregates){
-  const holder = $('#aggTableHolder');
-  if(!aggregates || !Object.keys(aggregates).length){ holder.innerHTML = '<div style="color:#64748b;font-size:13px">Không có dữ liệu tổng hợp.</div>'; $('#btnExportAgg').disabled = true; window.__lastAgg = []; return; }
-  const rows = Object.keys(aggregates).map(name => {
+  const holder = $('#aggSummaryHolder');
+  if(!aggregates || !Object.keys(aggregates).length){
+    holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu tổng hợp.</div>';
+    $('#btnExportAgg').disabled = true;
+    return;
+  }
+  const rows = Object.keys(aggregates).map(name=>{
     const a = aggregates[name];
     return {
-      trạm: name,
+      'Trạm': name,
       'Tổng (mm)': a.total,
-      'Max 1h (mm)': a.max1h,
-      'Max 3h (mm)': a.max3h,
-      'Max 6h (mm)': a.max6h
+      'Max 1h': a.max1h,
+      'Max 3h': a.max3h,
+      'Max 6h': a.max6h,
+      'Tổng 3h (gần nhất)': a.latest3h,
+      'Tổng 6h (gần nhất)': a.latest6h
     };
   });
-  // build html table
-  let html = '<table class="agg-table"><thead><tr><th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th></tr></thead><tbody>';
+
+  // build html
+  let html = '<table class="agg-table"><thead><tr>';
+  html += '<th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th><th>Tổng 3h (gần nhất)</th><th>Tổng 6h (gần nhất)</th>';
+  html += '</tr></thead><tbody>';
   for(const r of rows){
-    html += `<tr><td>${r['trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h (mm)']}</td><td>${r['Max 3h (mm)']}</td><td>${r['Max 6h (mm)']}</td></tr>`;
+    html += `<tr><td>${r['Trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h']}</td><td>${r['Max 3h']}</td><td>${r['Max 6h']}</td><td>${r['Tổng 3h (gần nhất)']}</td><td>${r['Tổng 6h (gần nhất)']}</td></tr>`;
   }
   html += '</tbody></table>';
   holder.innerHTML = html;
-  $('#btnExportAgg').disabled = false;
-  window.__lastAgg = rows;
+
+  // save for export as CSV
+  window.__lastAgg = rows.map(r => ({ trạm: r['Trạm'], tong_mm: r['Tổng (mm)'], max1h: r['Max 1h'], max3h: r['Max 3h'], max6h: r['Max 6h'], tong3h_latest: r['Tổng 3h (gần nhất)'], tong6h_latest: r['Tổng 6h (gần nhất)'] }));
+  $('#btnExportAgg').disabled = !(window.__lastAgg && window.__lastAgg.length);
+}
+
+/* Render 6h matrix (table) into matrixHolder */
+function render6hMatrix(seriesMap, startTime, endTime){
+  const holder = $('#matrixHolder');
+  holder.innerHTML = '';
+  if(!seriesMap || !Object.keys(seriesMap).length){ holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu 6h.</div>'; return; }
+
+  // build windows
+  const winMs = 6*60*60*1000;
+  const windows = [];
+  let cur = new Date(startTime.getTime());
+  while(cur.getTime() < endTime.getTime()){
+    const nxt = new Date(Math.min(cur.getTime() + winMs, endTime.getTime()));
+    windows.push({ start: new Date(cur), end: new Date(nxt) });
+    cur = new Date(cur.getTime() + winMs);
+  }
+
+  // build table
+  const table = document.createElement('table');
+  table.className = 'rain-table agg-table';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  headRow.appendChild(document.createElement('th')).textContent = 'Tên trạm';
+  for(const w of windows){
+    const dt = w.start;
+    const label = `${pad(dt.getHours())}h Ngày ${pad(dt.getDate())}/${pad(dt.getMonth()+1)}`;
+    const th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for(const name of Object.keys(seriesMap)){
+    const row = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className='time'; tdName.textContent = name; row.appendChild(tdName);
+    const series = seriesMap[name] || [];
+    for(const w of windows){
+      let sum = 0;
+      for(let i=0;i<series.length;i++){
+        const tt = series[i].t.getTime();
+        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
+        if(tt >= w.end.getTime()) break;
+      }
+      const td = document.createElement('td'); td.textContent = sum ? sum.toFixed(1) : '0.0'; row.appendChild(td);
+    }
+    tbody.appendChild(row);
+  }
+  table.appendChild(tbody);
+  holder.appendChild(table);
+
+  // prepare CSV rows: wide form (trạm + columns)
+  const csvRows = [];
+  for(const name of Object.keys(seriesMap)){
+    const series = seriesMap[name] || [];
+    const obj = { trạm: name };
+    windows.forEach((w, idx) => {
+      const key = `${pad(w.start.getHours())}h_${pad(w.start.getDate())}_${pad(w.start.getMonth()+1)}`;
+      let sum = 0;
+      for(let i=0;i<series.length;i++){
+        const tt = series[i].t.getTime();
+        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
+        if(tt >= w.end.getTime()) break;
+      }
+      obj[key] = sum ? sum.toFixed(1) : '0.0';
+    });
+    csvRows.push(obj);
+  }
+  window.__last6hMatrix = { windows, rows: csvRows };
+
+  // also create flat blocks for download if needed
+  const flat = [];
+  for(const name of Object.keys(seriesMap)){
+    const blocks = computeFixedWindowSums(seriesMap[name], 360, startTime, endTime);
+    for(const b of blocks){
+      flat.push({ trạm: name, window_start: b.start.toISOString().replace('T',' ').slice(0,19), window_end: b.end.toISOString().replace('T',' ').slice(0,19), sum_mm: b.sum });
+    }
+  }
+  window.__last6hBlocks = flat;
 }
 
 /* ===== MAIN FLOW ===== */
@@ -808,7 +919,7 @@ async function init(){
       }
     }));
 
-    // pivot theo thời gian (giữ nguyên key 'thoi gian' như trước)
+    // pivot theo thời gian
     const timeIndex=new Map();
     const names=Object.keys(datasets);
     for(const n of names){
@@ -822,21 +933,25 @@ async function init(){
     }
     const rows=Array.from(timeIndex.values())
       .sort((a,b)=>String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
-
     renderTable(rows);
 
-    // ----- Compute aggregates (1h/3h/6h) -----
+    // ---- aggregates ----
     if($('#showAggregates').checked){
-      const seriesMap = buildSeriesFromRows(rows); // per station arrays
+      const seriesMap = buildSeriesFromRows(rows);
       const aggs = {};
       for(const name of Object.keys(seriesMap)){
-        aggs[name] = computeStationAggregates(seriesMap[name]);
+        aggs[name] = computeStationAggregates(seriesMap[name], e);
       }
       renderAggregatesTable(aggs);
+
+      // render matrix 6h-blocks (non-overlapping starting from startDt)
+      render6hMatrix(seriesMap, s, e);
+
+      // show agg area
+      $('#aggArea').style.display = 'block';
     } else {
-      $('#aggTableHolder').innerHTML = '<div style="color:#64748b;font-size:13px">Tùy chọn hiển thị tổng hợp đang tắt.</div>';
+      $('#aggArea').style.display = 'none';
       $('#btnExportAgg').disabled = true;
-      window.__lastAgg = [];
     }
   });
 
@@ -846,7 +961,8 @@ async function init(){
     $('#summary').textContent='Đã xoá kết quả.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);
-    renderAggregatesTable({});
+    $('#aggArea').style.display = 'none';
+    $('#btnExportAgg').disabled = true;
   });
 
   // Export
@@ -855,6 +971,7 @@ async function init(){
   $('#btnExportAgg').addEventListener('click', ()=> {
     const rows = window.__lastAgg || [];
     if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
+    else alert('Không có dữ liệu tổng hợp.');
   });
 
   try{ await tryAutoLoadExcel(); }
