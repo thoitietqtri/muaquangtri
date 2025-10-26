@@ -95,17 +95,15 @@
     thead th:first-child{left:0; z-index:6}
     tbody td:first-child{position:sticky; left:0; background:#fff; z-index:5; text-align:left}
 
-    /* floating table-actions (fixed inside the scroll area where buttons originally were)
-       Using position: sticky keeps it at top of the scroll viewport while inside container */
+    /* table-actions placed OUTSIDE scroll: static position so it won't follow scroll */
     .table-actions{
-      position:sticky;
-      top:48px; /* adjust so it appears below header/thead */
-      z-index:7;
+      position:static;
       display:flex;
       gap:12px;
       padding:10px 0;
-      background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+      background:transparent;
       align-items:center;
+      margin-bottom:6px;
     }
     .table-actions .btn{padding:14px 22px;border-radius:14px;font-size:18px;font-weight:800}
 
@@ -230,9 +228,10 @@
     <div class="section">
       <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h)</label>
-      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn. "Tổng 3h/6h (gần nhất)" dùng endDt làm thời điểm kết thúc.</div>
-      <div style="margin-top:8px">
+      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn. "Tổng 3h/6h (gần nhất)" dùng endDt làm thời điểm kết thúc. "6h-blocks" là các khung 6h liên tiếp bắt đầu từ startDt.</div>
+      <div style="margin-top:8px;display:flex;gap:8px">
         <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
+        <button id="btnExport6hBlocks" class="btn ghost" disabled>Tải CSV 6h-blocks</button>
       </div>
     </div>
 
@@ -251,13 +250,15 @@
     <!-- KẾT QUẢ: bảng trái + đồ thị phải -->
     <div class="card" style="padding:12px">
       <div class="results-grid">
-        <div class="scroll" id="tableBox" style="padding:0">
-          <!-- sticky table actions: fixed at the top of the scroll area near the table (chỗ khoanh đỏ) -->
+        <div style="margin-bottom:6px;">
+          <!-- floating-looking buttons but STATIC in page flow (not inside scroll) -->
           <div class="table-actions" id="tableActions">
-            <button id="btnExportFloating" class="btn ghost">Tải CSV</button>
-            <button id="btnExportXlsxFloating" class="btn ghost">Tải Excel (.xlsx)</button>
+            <button id="btnExportFloating" class="btn ghost" disabled>Tải CSV</button>
+            <button id="btnExportXlsxFloating" class="btn ghost" disabled>Tải Excel (.xlsx)</button>
           </div>
+        </div>
 
+        <div class="scroll" id="tableBox" style="padding:0">
           <table id="dataTable" class="rain-table">
             <thead><tr id="thead"></tr></thead>
             <tbody id="tbody"></tbody>
@@ -273,7 +274,7 @@
 
           <!-- Aggregates table (mới) -->
           <div id="aggBox" style="padding:8px;background:#fff;border-radius:8px;border:1px solid #eef2f6;overflow:auto">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h, Tổng 3h/6h gần nhất tại endDt)</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h, Tổng 3h/6h gần nhất, 6h-blocks)</div>
             <div id="aggTableHolder" style="max-height:240px; overflow:auto"></div>
           </div>
         </div>
@@ -403,6 +404,7 @@ function renderTable(rows){
     $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
     renderChart([]);  // dọn chart
     $('#btnExportAgg').disabled = true;
+    $('#btnExport6hBlocks').disabled = true;
     $('#aggTableHolder').innerHTML = '';
     return;
   }
@@ -508,13 +510,9 @@ function setDateLimits(){
 /* ===== Parse time robustly ===== */
 function parseTimeString(t){
   if(!t && t!==0) return null;
-  // Try common patterns
-  // 1) If t already Date
   if (t instanceof Date) return t;
   let s = String(t).trim();
   if (!s) return null;
-
-  // Replace common separators and ensure seconds exist
   try {
     if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
       const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
@@ -532,7 +530,6 @@ function parseTimeString(t){
 }
 
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
-/* (unchanged) */
 function renderChart(rows){
   const host = $('#chartBox');
   host.innerHTML = '';
@@ -662,12 +659,7 @@ function renderChart(rows){
   svg.appendChild(axis);
 }
 
-/* ====== AGGREGATES (1h/3h/6h) ======
-   compute:
-   - total over period
-   - max sliding-window sum over windows 60, 180, 360 minutes
-   - latest-window sum ending at endTime for 180 and 360 minutes
-*/
+/* ====== AGGREGATES (1h/3h/6h and fixed 6h-blocks) ====== */
 
 /* Convert pivot rows into per-station series [{t:Date, v:number}, ...] */
 function buildSeriesFromRows(rows){
@@ -724,7 +716,7 @@ function latestWindowSum(series, endTime, windowMinutes){
   let sum = 0;
   for(let i=series.length-1;i>=0;i--){
     const t = series[i].t.getTime();
-    if (t > endTime.getTime()) continue; // future points ignore
+    if (t > endTime.getTime()) continue;
     if (t <= startMs) break;
     sum += series[i].v;
   }
@@ -740,7 +732,6 @@ function computeStationAggregates(series, endTime){
   const max1h = sums1h.length? Math.max(...sums1h) : 0;
   const max3h = sums3h.length? Math.max(...sums3h) : 0;
   const max6h = sums6h.length? Math.max(...sums6h) : 0;
-  // latest-window sums ending at endTime
   const latest3h = latestWindowSum(series, endTime, 180);
   const latest6h = latestWindowSum(series, endTime, 360);
   return {
@@ -753,10 +744,35 @@ function computeStationAggregates(series, endTime){
   };
 }
 
+/* compute sums for fixed non-overlapping windows starting at startTime */
+function computeFixedWindowSums(series, windowMinutes, startTime, endTime){
+  const results = [];
+  const windowMs = windowMinutes * 60 * 1000;
+  if(!startTime || !endTime) return results;
+  let curStart = new Date(startTime.getTime());
+  // ensure series sorted
+  if(series && series.length) series.sort((a,b)=>a.t - b.t);
+  while (curStart.getTime() < endTime.getTime()){
+    const curEnd = new Date(Math.min(curStart.getTime() + windowMs, endTime.getTime()));
+    let sum = 0;
+    // sum points t >= curStart && t < curEnd
+    for (let i=0;i<series.length;i++){
+      const tt = series[i].t.getTime();
+      if (tt >= curStart.getTime() && tt < curEnd.getTime()){
+        sum += series[i].v;
+      }
+      if (tt >= curEnd.getTime()) break;
+    }
+    results.push({ start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1)) });
+    curStart = new Date(curStart.getTime() + windowMs);
+  }
+  return results;
+}
+
 /* Render aggregates table in aggBox -> aggTableHolder */
 function renderAggregatesTable(aggregates){
   const holder = $('#aggTableHolder');
-  if(!aggregates || !Object.keys(aggregates).length){ holder.innerHTML = '<div style="color:#64748b;font-size:13px">Không có dữ liệu tổng hợp.</div>'; $('#btnExportAgg').disabled = true; window.__lastAgg = []; return; }
+  if(!aggregates || !Object.keys(aggregates).length){ holder.innerHTML = '<div style="color:#64748b;font-size:13px">Không có dữ liệu tổng hợp.</div>'; $('#btnExportAgg').disabled = true; $('#btnExport6hBlocks').disabled = true; window.__lastAgg = []; return; }
   const rows = Object.keys(aggregates).map(name => {
     const a = aggregates[name];
     return {
@@ -848,21 +864,39 @@ async function init(){
 
     renderTable(rows);
 
-    // ----- Compute aggregates (1h/3h/6h) -----
+    // ----- Compute aggregates (1h/3h/6h etc) -----
     if($('#showAggregates').checked){
       const seriesMap = buildSeriesFromRows(rows); // per station arrays
       const aggs = {};
       // use endDt selected by user as endpoint for "latest" sums
-      const endEl = $('#endDt').value ? parseTimeString($('#endDt').value) : new Date();
-      const endTime = endEl instanceof Date ? endEl : new Date();
+      const endEl = parseTimeString($('#endDt').value) || new Date();
+      const startEl = parseTimeString($('#startDt').value) || new Date();
       for(const name of Object.keys(seriesMap)){
-        aggs[name] = computeStationAggregates(seriesMap[name], endTime);
+        aggs[name] = computeStationAggregates(seriesMap[name], endEl);
       }
       renderAggregatesTable(aggs);
+
+      // Compute 6h-blocks across the period and store for CSV export
+      const all6hRows = [];
+      for(const name of Object.keys(seriesMap)){
+        const blocks = computeFixedWindowSums(seriesMap[name], 360, startEl, endEl);
+        for(const b of blocks){
+          all6hRows.push({
+            trạm: name,
+            window_start: b.start.toISOString().replace('T',' ').slice(0,19),
+            window_end:   b.end.toISOString().replace('T',' ').slice(0,19),
+            sum_mm: b.sum
+          });
+        }
+      }
+      window.__last6hBlocks = all6hRows;
+      $('#btnExport6hBlocks').disabled = !(all6hRows && all6hRows.length);
     } else {
       $('#aggTableHolder').innerHTML = '<div style="color:#64748b;font-size:13px">Tùy chọn hiển thị tổng hợp đang tắt.</div>';
       $('#btnExportAgg').disabled = true;
+      $('#btnExport6hBlocks').disabled = true;
       window.__lastAgg = [];
+      window.__last6hBlocks = [];
     }
   });
 
@@ -872,17 +906,27 @@ async function init(){
     $('#summary').textContent='Đã xoá kết quả.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
+    $('#btnExportAgg').disabled = true; $('#btnExport6hBlocks').disabled = true;
     renderChart([]);
     renderAggregatesTable({});
+    window.__last6hBlocks = [];
   });
 
   // Export (top toolbar)
   $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
   $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
+  // floating export binds
+  // (already bound above)
   // Export aggregate
   $('#btnExportAgg').addEventListener('click', ()=> {
     const rows = window.__lastAgg || [];
     if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
+  });
+  // Export 6h-blocks
+  $('#btnExport6hBlocks').addEventListener('click', ()=> {
+    const rows = window.__last6hBlocks || [];
+    if(rows && rows.length) downloadCSV(rows, 'rain_6h_blocks.csv');
+    else alert('Không có dữ liệu 6h-block để tải.');
   });
 
   try{ await tryAutoLoadExcel(); }
