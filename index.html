@@ -3,935 +3,614 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</title>
+  <title>LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG - Tổng 6h</title>
 
-  <!-- ====== Base UI ====== -->
   <style>
     :root{
       --bg:#f6f8ff; --card:#fff; --txt:#0f172a; --muted:#64748b; --pri:#1d4ed8;
-      --ok:#16a34a; --err:#dc2626; --grid:#e2e8f0; --grid-strong:#94a3b8;
-      --shadow:0 10px 30px -14px rgba(2,6,23,.25);
-      --radius:14px;
+      --grid:#e2e8f0; --grid-strong:#94a3b8; --radius:12px;
     }
     *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--txt);
-      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      display:grid; place-items:center; min-height:100vh;
-    }
+    body{margin:0; font-family:Inter,system-ui,Arial; background:var(--bg); color:var(--txt);}
 
-    /* ===== HEADER ===== */
     header{
-      width:100%; max-width:1600px;
-      position:sticky; top:0; z-index:6;
-      background:linear-gradient(180deg,#fff, #fff 70%, rgba(255,255,255,.6));
-      border-bottom:1px solid var(--grid); padding:18px 16px;
+      position:sticky; top:0; z-index:30;
+      background:#fff; border-bottom:1px solid var(--grid); padding:14px 18px;
     }
-    .title{margin:0; text-align:center; color:var(--pri); font-weight:800; letter-spacing:.4px}
-    .title .l1{font-size:26px; text-transform:uppercase}
-    .title .l2{font-size:13px; color:#334155; margin-top:6px; font-weight:600}
+    .title{margin:0; text-align:center; color:var(--pri); font-weight:800}
+    .l1{font-size:18px; text-transform:uppercase}
+    .l2{font-size:12px; color:#334155; margin-top:6px}
 
-    /* ===== LAYOUT ===== */
-    .shell{
-      width:min(1600px, 100vw - 24px);
-      margin:16px auto;
-      display:grid; grid-template-columns: 420px 1fr; gap:16px;
-    }
-    .card{
-      background:var(--card); border:1px solid var(--grid); border-radius:var(--radius);
-      box-shadow:var(--shadow); padding:14px;
-    }
-    .section{margin-bottom:14px}
-    .section-title{
-      display:flex; align-items:center; gap:8px;
-      font-weight:800; color:#0b1437; margin:0 0 8px 0; font-size:14px;
-    }
-    .section-title .tag{font-size:11px; background:#e2e8f0; color:#334155; border-radius:999px; padding:2px 8px}
+    .shell{max-width:1400px; margin:18px auto; padding:0 12px; display:grid; grid-template-columns: 380px 1fr; gap:14px;}
 
-    /* ===== FORM ===== */
-    label{font-size:12px; color:var(--muted); display:block; margin:4px 0}
-    input,select,button,textarea{
-      width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px;
-      font-size:14px; background:#fff;
-    }
-    .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
-    .full{grid-column:1/-1}
-    .btn{background:var(--pri); color:#fff; border:none; cursor:pointer; font-weight:700; padding:12px 18px; border-radius:12px}
-    .btn.secondary{background:#64748b}
+    .card{background:var(--card); border:1px solid var(--grid); border-radius:var(--radius); padding:12px; box-shadow:0 8px 20px rgba(2,6,23,0.04)}
+
+    /* left sidebar */
+    aside .section-title{font-weight:800; margin-bottom:8px}
+
+    label{display:block; font-size:13px; color:var(--muted); margin-bottom:6px}
+    input,select,button{padding:8px 10px; border:1px solid #e6eef8; border-radius:10px; font-size:14px}
+    .row{display:flex; gap:8px}
+    .btn{background:var(--pri); color:#fff; border:none; cursor:pointer; font-weight:700; padding:8px 12px; border-radius:10px}
     .btn.ghost{background:#eef2ff; color:#1e40af}
-    .btn:disabled{opacity:.6; cursor:not-allowed}
-    .status{font-size:12px; margin-top:6px}
-    .status.ok{color:var(--ok)} .status.err{color:var(--err)}
+    .btn.secondary{background:#64748b}
 
-    /* ===== TOOLBAR ===== */
-    .toolbar{
-      display:flex; align-items:center; justify-content:space-between; gap:10px;
-      position:sticky; top:calc(64px + 16px); z-index:5;
-    }
-    .summary{font-size:13px; color:#1f2937}
-    .toolbar-actions{display:flex; gap:8px}
+    /* results area */
+    .results{display:flex; flex-direction:column; gap:12px}
+    .actions-row{display:flex; align-items:center; gap:12px; margin-bottom:6px}
+    /* IMPORTANT: actions-row is OUTSIDE any overflow container so it's static and won't scroll inside table */
+    .actions-row .btn{padding:12px 20px; font-size:16px; border-radius:14px}
 
-    /* ===== RESULTS GRID (table left + chart right) ===== */
-    .results-grid{
-      display:grid;
-      grid-template-columns:minmax(440px,48%) 1fr;
-      gap:12px;
-      align-items:start;
-    }
+    /* 6h matrix */
+    .matrix-wrap{overflow:auto; border:1px solid #eef2f6; border-radius:8px; background:#fff; padding:8px}
+    .matrix-table{border-collapse:collapse; width:100%;}
+    .matrix-table th, .matrix-table td{border:1px solid #eef2f6; padding:6px 8px; text-align:center; white-space:nowrap; font-size:13px}
+    .matrix-table thead th{background:#fbfbff; font-weight:800; position:sticky; top:0; z-index:5}
+    .station-col{position:sticky; left:0; background:#fff; text-align:left; font-weight:700; z-index:6}
 
-    /* ===== TABLE (LOG) ===== */
-    .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff; position:relative}
-    table{width:max-content; border-collapse:separate; border-spacing:0; font-size:12px; white-space:nowrap}
-    thead th, tbody td{
-      padding:8px 12px; text-align:center; vertical-align:middle;
-      border-right:1.5px solid var(--grid-strong); border-bottom:1.5px solid var(--grid-strong);
-    }
-    thead th:first-child, tbody td:first-child{border-left:1.5px solid var(--grid-strong)}
-    thead th{
-      position:sticky; top:0; z-index:4; background:#f1f5f9; border-bottom-color:#64748b;
-      font-weight:800;
-    }
-    thead th:first-child{left:0; z-index:6}
-    tbody td:first-child{position:sticky; left:0; background:#fff; z-index:5; text-align:left}
+    /* main data table */
+    .table-scroll{overflow:auto; border-radius:8px; background:#fff; border:1px solid #eef2f6}
+    .rain-table{border-collapse:separate; border-spacing:0; width:100%; min-width:720px}
+    .rain-table th, .rain-table td{border-bottom:1px solid #eef2f6; padding:8px; text-align:center; white-space:nowrap}
+    .rain-table thead th{position:sticky; top:0; background:#f8fafc; z-index:3; font-weight:800}
+    .rain-table td.time{position:sticky; left:0; background:#fff; text-align:left; font-weight:700; z-index:4}
 
-    /* table-actions placed OUTSIDE scroll: static position so it won't follow scroll */
-    .table-actions{
-      position:static;
-      display:flex;
-      gap:12px;
-      padding:10px 0;
-      background:transparent;
-      align-items:center;
-      margin-bottom:6px;
-    }
-    .table-actions .btn{padding:14px 22px;border-radius:14px;font-size:18px;font-weight:800}
-
-    /* ===== DATETIME ===== */
-    .dt{display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; position:relative; z-index:30;}
-    .dt input[type="datetime-local"]{
-      height:44px; background:#f8fafc; border:1.5px solid var(--grid-strong); font-weight:600; letter-spacing:.2px;
-      padding-right:36px; position:relative; z-index:31;
-    }
-
-    @media (max-width:1100px){
+    @media (max-width:1000px){
       .shell{grid-template-columns:1fr}
-      .toolbar{top:calc(64px + 8px)}
-      .results-grid{grid-template-columns:1fr}
     }
   </style>
-
-  <!-- ====== Styles riêng cho app mưa (bảng + chart) ====== -->
-  <style>
-  body{margin:0;background:#f1f5f9;font-family:Inter,system-ui,Avenir,Helvetica,Arial,sans-serif}
-  .container{max-width:1280px;margin:18px auto;padding:12px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .header h2{margin:0;font-size:20px;font-weight:800;color:#0f172a}
-  .header .total{font-weight:900;color:#c1121f}
-  .toolbar{display:grid;grid-template-columns:200px 200px 220px 140px 1fr;gap:10px;align-items:end;margin-bottom:10px}
-  .toolbar label{font-size:12px;color:#475569;display:block;margin-bottom:4px}
-  .toolbar input,.toolbar select,.toolbar button{width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff}
-  .toolbar button{cursor:pointer;font-weight:700;border:none;background:#2563eb;color:#fff}
-  .toolbar button:disabled{opacity:.6;cursor:not-allowed}
-  .layout{display:grid;grid-template-columns:1fr 420px;gap:12px;align-items:start}
-  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;box-shadow:0 6px 18px rgba(0,0,0,.04)}
-  .card h3{margin:6px 0 10px;font-size:16px;font-weight:800;color:#0f172a}
-  .right-pane{position:sticky;top:12px}
-  .table-wrapper{width:100%;overflow:auto;border-radius:8px}
-  .rain-table{border-collapse:separate;border-spacing:0;width:100%;min-width:760px}
-  .rain-table th,.rain-table td{border-bottom:1px solid #eef2f6;padding:7px 8px;text-align:center;white-space:nowrap;font-size:13px}
-  .rain-table thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
-  .rain-table tbody td.time,.rain-table tfoot td.time{text-align:left;font-weight:700;color:#0f172a;position:sticky;left:0;background:#fff}
-  .rain-table tbody tr:nth-child(odd) td{background:#fcfcfd}
-  .rain-table tfoot td{font-weight:900;color:#c1121f;background:#fff5f5}
-  .mm-black{color:#111827;font-weight:700}.mm-green{color:#16a34a;font-weight:800}.mm-purple{color:#7c3aed;font-weight:800}.mm-red{color:#dc2626;font-weight:900}
-  .agg-table{width:100%;border-collapse:collapse}
-  .agg-table th,.agg-table td{padding:8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
-  .agg-table thead th{background:#f8fafc;font-weight:800}
-  @media (max-width:1100px){.layout{grid-template-columns:1fr}.right-pane{position:static}}
-  </style>
-
-  <!-- XLSX reader -->
+  <!-- xlsx -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <header>
-  <h1 class="title">
-    <div class="l1">LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</div>
-    <div class="l2">Phục vụ công tác phòng chống thiên tai</div>
-  </h1>
+  <div class="title">
+    <div class="l1">LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG</div>
+    <div class="l2">Hiển thị tổng 6 giờ — Quảng Trị</div>
+  </div>
 </header>
 
 <div class="shell">
-  <!-- ===== SIDEBAR ===== -->
+  <!-- SIDEBAR -->
   <aside class="card">
-    <!-- Nguồn dữ liệu -->
     <div class="section">
-      <h3 class="section-title">Nguồn dữ liệu <span class="tag">Excel + API</span></h3>
+      <div class="section-title">Nguồn dữ liệu</div>
       <div class="row">
         <button id="btnAutoXlsx" class="btn">Tải tự động</button>
-        <input type="file" id="fileXlsx" accept=".xlsx" />
+        <input id="fileXlsx" type="file" accept=".xlsx" />
       </div>
-      <div id="xlsxStatus" class="status">Chưa tải file Excel.</div>
-      <div class="status" style="color:var(--muted)">
-        Đặt <b>thamso_khaithac.xlsx</b> vào thư mục <b>public/</b> của dự án; giữ nguyên các cột:
-        <code>matram, tentram, matinh, Tab, sophut, tinhtong</code>.
-      </div>
-      <label class="full" style="margin-top:8px">Passcode (nếu API yêu cầu)</label>
+      <div id="xlsxStatus" style="margin-top:8px;color:#64748b;font-size:13px">Chưa tải file Excel.</div>
+      <label style="margin-top:10px">Passcode (nếu API yêu cầu)</label>
       <input id="passcode" type="text" placeholder="để trống nếu không cần">
     </div>
 
-    <hr style="border:none;border-top:1px solid var(--grid); margin:10px 0">
+    <hr style="margin:10px 0;border:none;border-top:1px solid #eef2f6">
 
-    <!-- Chọn trạm & thời gian -->
     <div class="section">
-      <h3 class="section-title">Chọn trạm & thời gian</h3>
-      <label>Chọn các trạm (Giữ Ctrl/Shift để chọn nhiều)</label>
-      <select id="multiSelect" multiple size="10" style="height:240px"></select>
-      <div class="status" style="color:var(--muted)">Mặc định chọn 4 trạm đầu tiên. Chọn nhiều trạm: bảng sẽ có thanh kéo ngang.</div>
+      <div class="section-title">Chọn trạm & thời gian</div>
+      <label>Chọn các trạm</label>
+      <select id="multiSelect" multiple size="10" style="width:100%;height:240px"></select>
 
-      <div class="dt" style="margin-top:10px">
-        <div>
-          <label>Bắt đầu</label>
-          <input type="datetime-local" id="startDt">
-        </div>
-        <div>
-          <label>Kết thúc</label>
-          <input type="datetime-local" id="endDt">
-        </div>
+      <label style="margin-top:8px">Bắt đầu</label>
+      <input id="startDt" type="datetime-local" />
+      <label style="margin-top:8px">Kết thúc</label>
+      <input id="endDt" type="datetime-local" />
+
+      <div style="margin-top:8px">
+        <label>Chu kỳ (sophut)</label>
+        <input id="sophut" type="number" value="60" min="1" />
       </div>
 
-      <div class="row" style="margin-top:10px">
-        <div>
-          <label>Chu kỳ (sophut)</label>
-          <input type="number" id="sophut" min="1" step="1" value="60">
-        </div>
-        <div>
-          <label>ten_table (mặc định lấy theo Excel)</label>
-          <input id="tenTable" placeholder="để trống để lấy theo Excel">
-        </div>
+      <div style="margin-top:8px">
+        <label><input id="tinhtong" type="checkbox" checked /> Tính tổng theo ngày (tinhtong=1)</label>
       </div>
 
-      <label style="margin-top:8px"><input type="checkbox" id="tinhtong" checked> Tính tổng theo ngày (tinhtong=1)</label>
-    </div>
-
-    <!-- Thao tác -->
-    <div class="section">
-      <h3 class="section-title">Thao tác</h3>
-      <div class="row">
+      <div style="margin-top:12px; display:flex; gap:8px">
         <button id="btnFetch" class="btn">Lấy dữ liệu</button>
-        <button id="btnClear" class="btn secondary">Xoá kết quả</button>
+        <button id="btnClear" class="btn secondary">Xoá</button>
       </div>
     </div>
 
-    <!-- Tuỳ chọn hiển thị tổng hợp -->
+    <hr style="margin:10px 0;border:none;border-top:1px solid #eef2f6">
+
     <div class="section">
-      <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
-      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h)</label>
-      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn. "Tổng 3h/6h (gần nhất)" dùng endDt làm thời điểm kết thúc. "6h-blocks" là các khung 6h liên tiếp bắt đầu từ startDt.</div>
-      <div style="margin-top:8px;display:flex;gap:8px">
+      <div class="section-title">Tổng hợp</div>
+      <label><input id="showAggregates" type="checkbox" checked /> Hiển thị bảng tổng hợp (1h/3h/6h + 6h-blocks)</label>
+      <div style="margin-top:8px; display:flex; gap:8px">
         <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
         <button id="btnExport6hBlocks" class="btn ghost" disabled>Tải CSV 6h-blocks</button>
       </div>
     </div>
-
   </aside>
 
-  <!-- ===== MAIN ===== -->
-  <main style="display:grid; gap:16px;">
-    <div class="card toolbar">
-      <div class="summary" id="summary">Chưa có dữ liệu. Hãy chọn trạm & thời gian rồi bấm “Lấy dữ liệu”.</div>
-      <div class="toolbar-actions">
-        <button id="btnExport" class="btn ghost" disabled>Tải CSV</button>
-        <button id="btnExportXlsx" class="btn ghost" disabled>Tải Excel (.xlsx)</button>
+  <!-- MAIN -->
+  <main>
+    <div class="card results">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div id="summary" style="color:#334155">Chưa có dữ liệu.</div>
+        <div style="display:flex; gap:8px">
+          <button id="btnExport" class="btn ghost" disabled>Tải CSV</button>
+          <button id="btnExportXlsx" class="btn ghost" disabled>Tải Excel (.xlsx)</button>
+        </div>
       </div>
-    </div>
 
-    <!-- KẾT QUẢ: bảng trái + đồ thị phải -->
-    <div class="card" style="padding:12px">
-      <div class="results-grid">
-        <div style="margin-bottom:6px;">
-          <!-- floating-looking buttons but STATIC in page flow (not inside scroll) -->
-          <div class="table-actions" id="tableActions">
-            <button id="btnExportFloating" class="btn ghost" disabled>Tải CSV</button>
-            <button id="btnExportXlsxFloating" class="btn ghost" disabled>Tải Excel (.xlsx)</button>
-          </div>
+      <!-- ACTIONS ROW (STATIC, nằm ngoài vùng cuộn) -->
+      <div class="actions-row">
+        <div id="staticActions">
+          <button id="btnExportFloating" class="btn ghost" disabled>Tải CSV</button>
+          <button id="btnExportXlsxFloating" class="btn ghost" disabled>Tải Excel (.xlsx)</button>
         </div>
+        <div style="flex:1"></div>
+        <div style="font-size:13px;color:#64748b">Bảng 6h: non-overlapping windows bắt đầu từ startDt</div>
+      </div>
 
-        <div class="scroll" id="tableBox" style="padding:0">
-          <table id="dataTable" class="rain-table">
-            <thead><tr id="thead"></tr></thead>
-            <tbody id="tbody"></tbody>
-            <tfoot id="tfoot"></tfoot>
-          </table>
+      <!-- MATRIX 6H (sẽ hiển thị sau khi fetch) -->
+      <div id="matrixArea" class="card matrix-wrap" style="display:none">
+        <div style="margin-bottom:8px; display:flex; justify-content:space-between; align-items:center">
+          <div style="font-weight:800">Bảng tổng 6 giờ (mỗi ô = SUM trong khung 6h)</div>
+          <div style="font-size:13px;color:#64748b">Cột: khung 6h bắt đầu từ Start</div>
         </div>
+        <div id="matrixHolder" style="overflow:auto"></div>
+      </div>
 
-        <!-- Chart + Aggregates box -->
-        <div id="rightBox" class="card" style="min-height:360px; display:flex;flex-direction:column;gap:10px">
-          <div id="chartBox" style="min-height:200px;padding:8px;">
-            <div style="font-size:12px;color:#64748b">Chưa có dữ liệu để vẽ đồ thị.</div>
-          </div>
-
-          <!-- Aggregates table (mới) -->
-          <div id="aggBox" style="padding:8px;background:#fff;border-radius:8px;border:1px solid #eef2f6;overflow:auto">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h, Tổng 3h/6h gần nhất, 6h-blocks)</div>
-            <div id="aggTableHolder" style="max-height:240px; overflow:auto"></div>
-          </div>
-        </div>
+      <!-- DATA TABLE -->
+      <div class="table-scroll" style="margin-top:8px">
+        <table id="dataTable" class="rain-table">
+          <thead><tr id="thead"></tr></thead>
+          <tbody id="tbody"></tbody>
+          <tfoot id="tfoot"></tfoot>
+        </table>
       </div>
     </div>
   </main>
 </div>
 
 <script>
-/* ===== CONFIG (Netlify Proxy) ===== */
+/* CONFIG */
 const API_PROXY = "/.netlify/functions/proxy";
 const DEFAULT_XLSX_PATH = "/thamso_khaithac.xlsx";
 const EXCEL_SHEET = "KhaibaoQuangtri";
 
-/* ===== UTIL ===== */
+/* UTILS */
 const $ = s => document.querySelector(s);
-const pad = n => String(n).padStart(2,"0");
-const toLocalDatetimeValue = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-const quote = s => `'${s}'`;
+const pad = n => String(n).padStart(2,'0');
+function toLocalDT(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+function quote(s){ return `'${s}'`; }
 function buildProxyUrl(p){ return `${API_PROXY}?` + new URLSearchParams(p).toString(); }
+function safeNum(v){ const n=Number(String(v??'').replace(',','.')); return isFinite(n)?n:NaN; }
 
-function safeNum(v){ const n=Number(String(v??'').toString().replace(',','.')); return isFinite(n)?n:NaN; }
-
-/* CSV/XLSX Export */
-function toCSV(rows){
-  if(!rows?.length) return "";
-  const cols = Object.keys(rows[0]);
-  const esc = v => `"${String(v??"").replace(/"/g,'""')}"`;
-  const head = cols.map(esc).join(",");
-  const body = rows.map(r => cols.map(c => esc(r[c])).join(",")).join("\n");
-  return head+"\n"+body;
+/* XLSX helper */
+function normalizeRow(r){
+  const pick=(a,b)=> (a!==undefined && a!=='')?a:b;
+  return {
+    matram:String(pick(r.matram,r.MATRAM)||'').trim(),
+    tentram:String(pick(r.tentram,r.TENTRAM)||'').trim(),
+    Tab:String(pick(r.Tab,r.tab)||'').trim(),
+    sophut:Number(pick(r.sophut,r.SOPHUT)||60)||60,
+    tinhtong:Number(pick(r.tinhtong,r.TINHTONG)||0)||0
+  };
 }
-function downloadCSV(rows, filename='rain_ketqua.csv'){
-  const csv = toCSV(rows);
+
+/* FILE / STATIONS */
+let stations = [];
+function loadFromWorkbook(wb){
+  const ws = wb.Sheets[EXCEL_SHEET] || wb.Sheets[wb.SheetNames[0]];
+  const arr = XLSX.utils.sheet_to_json(ws,{defval:''});
+  stations = arr.map(normalizeRow).filter(r=>r.matram);
+  if(!stations.length) throw new Error('Không đọc được danh sách trạm từ Excel.');
+  $('#xlsxStatus').textContent = `Đã nạp ${stations.length} trạm.`;
+  fillStationSelects();
+}
+async function tryAutoLoadExcel(){
+  $('#xlsxStatus').textContent = 'Đang tải thamso_khaithac.xlsx...';
+  const res = await fetch(DEFAULT_XLSX_PATH);
+  if(!res.ok) throw new Error('Không thấy /thamso_khaithac.xlsx');
+  const ab = await res.arrayBuffer();
+  const wb = XLSX.read(ab,{type:'array'});
+  loadFromWorkbook(wb);
+}
+
+function fillStationSelects(){
+  const sel = $('#multiSelect'); sel.innerHTML = '';
+  stations.forEach((r,i)=> {
+    const o = document.createElement('option'); o.value=i; o.textContent = r.tentram || r.matram;
+    sel.appendChild(o);
+  });
+  for(let i=0;i<Math.min(6,stations.length);i++) sel.options[i].selected = true;
+}
+
+/* FETCH JSON with fallback */
+async function fetchJSON(url){
+  async function doFetch(u){
+    const res = await fetch(u, { credentials:'include' });
+    const txt = await res.text();
+    if(!res.ok) throw new Error(txt||`HTTP ${res.status}`);
+    try { return JSON.parse(txt); } catch(e){ throw new Error(txt.slice(0,180)); }
+  }
+  try{ return await doFetch(url); }
+  catch(e){ const proxy='https://api.allorigins.win/raw?url='+encodeURIComponent(url); return await doFetch(proxy); }
+}
+
+/* PIVOT KEYS */
+const TIME_KEYS=['thoigian','Thoigian','thoigian_SL','Thoigian_SL','ThoiGian','ThoiGian_SL','time','datetime','date','Ngay','NgayGio','ngaygio'];
+const VALUE_KEYS=['solieu','SoLieu','Solieu','GiaTri','giatri','mucnuoc','MucNuoc','value','LuongMua','luongmua','Mua'];
+function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='' ) return row[k]; } }
+const normTime = t => t==null ? '' : String(t).trim().replace('T',' ');
+
+/* PARSE TIME */
+function parseTimeString(t){
+  if(!t && t!==0) return null;
+  if(t instanceof Date) return t;
+  let s = String(t).trim();
+  if(!s) return null;
+  try{
+    s = s.replace('T',' ').replace(/\.\d+$/,'');
+    if(s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)){
+      const parts = s.split(/[\/\s:]+/);
+      const d=parts[0], m=parts[1], y=parts[2];
+      const rest = parts.slice(3);
+      const tp = rest.length? (' '+rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')) : '';
+      s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${tp}`;
+    }
+    const dtParts = s.split(' ');
+    if(dtParts.length===2 && dtParts[1].split(':').length===2) s += ':00';
+    const dobj = new Date(s);
+    if(!isNaN(dobj.getTime())) return dobj;
+  }catch(e){}
+  const d2 = new Date(Date.parse(s));
+  return isNaN(d2.getTime())? null : d2;
+}
+
+/* CSV export */
+function toCSV(rows){
+  if(!rows?.length) return '';
+  const cols = Object.keys(rows[0]);
+  const esc = v=> `"${String(v??'').replace(/"/g,'""')}"`;
+  const head = cols.map(esc).join(',');
+  const body = rows.map(r => cols.map(c => esc(r[c])).join(',')).join('\n');
+  return head + '\n' + body;
+}
+function downloadCSV(rows, filename='data.csv'){
+  const csv = toCSV(rows); if(!csv) return;
   const bom = '\uFEFF';
-  const blob = new Blob([bom, csv], {type: 'text/csv;charset=utf-8;'});
+  const blob = new Blob([bom, csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = filename;
-  document.body.appendChild(a); a.click(); a.remove();
+  const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
 function downloadXLSX(rows){
-  if (!rows?.length) return;
+  if(!rows?.length) return;
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, 'DuLieu');
   XLSX.writeFile(wb, 'rain_ketqua.xlsx');
 }
 
-/* Fetch JSON (fallback AllOrigins nếu CORS lỗi) */
-async function fetchJSON(url){
-  async function doFetch(u){
-    const res = await fetch(u, { credentials:'include' });
-    const text = await res.text();
-    if (!res.ok) throw new Error(text || `HTTP ${res.status}`);
-    try { return JSON.parse(text); }
-    catch(e){ throw new Error(text.slice(0,180)); }
-  }
-  try { return await doFetch(url); }
-  catch(e){
-    const proxy = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-    return await doFetch(proxy);
-  }
-}
-
-/* ===== READ EXCEL (STATIONS) ===== */
-let stations=[];
-function normalizeRow(r){
-  const pick=(a,b)=> (a!==undefined && a!=='')?a:b;
-  return {
-    matram:String(pick(r.matram,r.MATRAM)||'').trim(),
-    tentram:String(pick(r.tentram,r.TENTRAM)||'').trim(),
-    matinh:pick(r.matinh,r.MATINH)||'',
-    Tab:String(pick(r.Tab,r.tab)||'').trim(),
-    sophut:Number(pick(r.sophut,r.SOPHUT)||60)||60,
-    tinhtong:Number(pick(r.tinhtong,r.TINHTONG)||0)||0
-  };
-}
-function loadFromWorkbook(wb){
-  const ws = wb.Sheets[EXCEL_SHEET] || wb.Sheets[wb.SheetNames[0]];
-  const arr = XLSX.utils.sheet_to_json(ws,{defval:''});
-  stations = arr.map(normalizeRow).filter(r=>r.matram);
-  if (!stations.length) throw new Error('Không đọc được danh sách trạm từ Excel.');
-  $('#xlsxStatus').className='status ok';
-  $('#xlsxStatus').textContent=`Đã nạp ${stations.length} trạm.`;
-  fillStationSelects();
-}
-async function tryAutoLoadExcel(){
-  $('#xlsxStatus').textContent='Đang tải thamso_khaithac.xlsx…';
-  const res = await fetch(DEFAULT_XLSX_PATH);
-  if (!res.ok) throw new Error('Không thấy /thamso_khaithac.xlsx (đặt file vào thư mục public/)');
-  const ab = await res.arrayBuffer();
-  const wb = XLSX.read(ab,{type:'array'});
-  loadFromWorkbook(wb);
-}
-
-/* ===== UI ===== */
-function fillStationSelects(){
-  const box=$('#multiSelect'); box.innerHTML='';
-  stations.forEach((r,i)=>{
-    const o=document.createElement('option');
-    o.value=i; o.textContent=(r.tentram||'(không tên)').trim();
-    box.appendChild(o);
-  });
-  for(let i=0;i<Math.min(4,stations.length);i++){ box.options[i].selected=true; }
-}
-
-/* ====== MÀU THEO NGƯỠNG + HÀNG TỔNG ====== */
-function mmClass(val){
-  const v = Number(String(val ?? "").toString().replace(",", "."));
-  if (!isFinite(v)) return "";
-  if (v < 10) return "mm-black";
-  if (v <= 25) return "mm-green";
-  if (v <= 50) return "mm-purple";
-  return "mm-red";
-}
-
+/* RENDER MAIN TABLE */
+function mmClass(v){ if(!isFinite(v)) return ''; if(v<10) return ''; if(v<=25) return ''; if(v<=50) return ''; return ''; }
 function renderTable(rows){
-  const thead=$('#thead'), tbody=$('#tbody'), tfoot=$('#tfoot');
+  const thead = $('#thead'), tbody = $('#tbody'), tfoot = $('#tfoot');
   thead.innerHTML=''; tbody.innerHTML=''; tfoot.innerHTML='';
+  if(!rows?.length){ thead.innerHTML='<th>(trống)</th>'; $('#summary').textContent='Không có dữ liệu.'; $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true; $('#btnExportFloating').disabled=true; $('#btnExportXlsxFloating').disabled=true; return; }
 
-  if(!Array.isArray(rows)||!rows.length){
-    thead.innerHTML='<th>(trống)</th>';
-    $('#summary').textContent='Không có dữ liệu để hiển thị.';
-    $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
-    $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
-    renderChart([]);  // dọn chart
-    $('#btnExportAgg').disabled = true;
-    $('#btnExport6hBlocks').disabled = true;
-    $('#aggTableHolder').innerHTML = '';
-    return;
-  }
-
-  // Xác định cột thời gian và SẮP XẾP lại cột
   const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
+  const timeCol = cols.find(c=>c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) || cols.find(c=>/time|date|ngay/i.test(c)) || cols[0];
+  const stationCols = cols.filter(c=>c!==timeCol);
 
-  const stationCols = cols.filter(c => c !== timeCol);
-  const orderedCols = [timeCol, ...stationCols];
+  // header
+  thead.innerHTML = `<tr>${[timeCol, ...stationCols].map(c=>`<th>${c}</th>`).join('')}</tr>`;
 
-  // Header theo đúng thứ tự
-  thead.innerHTML = orderedCols.map(c => `<th>${c}</th>`).join('');
-
-  // Body + tính tổng (chỉ cho các cột trạm)
-  const totals = Object.fromEntries(stationCols.map(c => [c, 0]));
+  const totals = Object.fromEntries(stationCols.map(c=>[c,0]));
   const frag = document.createDocumentFragment();
-
-  for (const r of rows) {
+  for(const r of rows){
     const tr = document.createElement('tr');
-
-    // Cột thời gian trước
-    const tdTime = document.createElement('td');
-    tdTime.textContent = r[timeCol] ?? '';
-    tr.appendChild(tdTime);
-
-    // Các cột trạm
-    for (const c of stationCols) {
-      const raw = r[c];
-      const num = Number(String(raw ?? '').toString().replace(',', '.'));
-      if (isFinite(num)) totals[c] += num;
-
-      const td = document.createElement('td');
-      td.textContent = (raw==='' || raw==null) ? '' : (isFinite(num) ? num.toFixed(1) : raw);
-      td.className = mmClass(num);
-      tr.appendChild(td);
+    const tdTime = document.createElement('td'); tdTime.className='time'; tdTime.textContent = r[timeCol]||''; tr.appendChild(tdTime);
+    for(const c of stationCols){
+      const raw = r[c]; const num = Number(String(raw??'').replace(',','.'));
+      if(isFinite(num)) totals[c] += num;
+      const td = document.createElement('td'); td.textContent = isFinite(num)? num.toFixed(1) : (raw==null?'':raw);
+      td.className = mmClass(num); tr.appendChild(td);
     }
-
     frag.appendChild(tr);
   }
   tbody.appendChild(frag);
 
-  // HÀNG TỔNG (mm) đúng vị trí dưới từng cột trạm
-  const trow = document.createElement('tr');
-  const first = document.createElement('td');
-  first.className = 'time';
-  first.innerHTML = '<b>Tổng (mm)</b>';
-  trow.appendChild(first);
+  // footer totals
+  const trf = document.createElement('tr'); trf.innerHTML = `<td class="time"><b>Tổng (mm)</b></td>` + stationCols.map(c=>`<td style="font-weight:900;color:#c1121f">${(totals[c]||0).toFixed(1)}</td>`).join('');
+  tfoot.appendChild(trf);
 
-  for (const c of stationCols) {
-    const td = document.createElement('td');
-    td.style.fontWeight = '900';
-    td.style.color = '#c1121f';
-    td.textContent = totals[c] ? totals[c].toFixed(1) : '0.0';
-    trow.appendChild(td);
-  }
-  tfoot.appendChild(trow);
-
-  // Trạng thái + export + chart
   $('#summary').textContent = `Hiển thị ${rows.length} mốc thời gian — ${stationCols.length} trạm.`;
-  $('#btnExport').disabled = false;
-  $('#btnExportXlsx').disabled = false;
-  $('#btnExportFloating').disabled = false;
-  $('#btnExportXlsxFloating').disabled = false;
+  $('#btnExport').disabled=false; $('#btnExportXlsx').disabled=false; $('#btnExportFloating').disabled=false; $('#btnExportXlsxFloating').disabled=false;
   window.__lastRows = rows;
-
-  // VẼ BIỂU ĐỒ CỘT theo TỔNG từng trạm
-  renderChart(rows);
 }
 
-/* ===== PIVOT BY TIME ===== */
-function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='' ) return row[k]; } }
-const TIME_KEYS=['thoigian','Thoigian','thoigian_SL','Thoigian_SL','ThoiGian','ThoiGian_SL','time','datetime','date','Ngay','NgayGio','ngaygio'];
-const VALUE_KEYS=['solieu','SoLieu','Solieu','GiaTri','giatri','mucnuoc','MucNuoc','value','LuongMua','luongmua','Mua'];
-const normTime=t=> (t==null?'':String(t).trim().replace('T',' '));
-
-/* ===== DATE LIMITS ===== */
-function pad2(n){return String(n).padStart(2,'0')}
-function toLocalDT(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`}
-function fiveDaysAgoMidnight(){ const n=new Date(); n.setDate(n.getDate()-5); n.setHours(0,0,0,0); return n; }
-function setDateLimits(){
-  const now=new Date();
-  const startEl = $('#startDt');
-  const endEl   = $('#endDt');
-
-  const minStart = fiveDaysAgoMidnight();
-  startEl.min = toLocalDT(minStart);
-  startEl.max = toLocalDT(now);
-
-  if (!startEl.value || new Date(startEl.value) < minStart) startEl.value = toLocalDT(minStart);
-  if (new Date(startEl.value) > now) startEl.value = toLocalDT(now);
-
-  endEl.min = startEl.value;
-  endEl.max = toLocalDT(now);
-
-  if (!endEl.value || new Date(endEl.value) < new Date(startEl.value)) endEl.value = toLocalDT(now);
-  if (new Date(endEl.value) > now) endEl.value = toLocalDT(now);
-}
-
-/* ===== Parse time robustly ===== */
-function parseTimeString(t){
-  if(!t && t!==0) return null;
-  if (t instanceof Date) return t;
-  let s = String(t).trim();
-  if (!s) return null;
-  try {
-    if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
-      const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
-      const timePart = rest.length? (' ' + rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')): '';
-      s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${timePart}`;
-    }
-    s = s.replace('T',' ').replace(/\.\d+$/,'');
-    const dtParts = s.split(' ');
-    if (dtParts.length === 2 && dtParts[1].split(':').length === 2) s = s + ':00';
-    const dObj = new Date(s);
-    if (!isNaN(dObj.getTime())) return dObj;
-  } catch(e){ }
-  const d2 = new Date(Date.parse(s));
-  return isNaN(d2.getTime())? null : d2;
-}
-
-/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
-function renderChart(rows){
-  const host = $('#chartBox');
-  host.innerHTML = '';
-  if (!Array.isArray(rows) || !rows.length){
-    const div=document.createElement('div');
-    div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent='Chưa có dữ liệu để vẽ đồ thị.';
-    host.appendChild(div);
-    return;
-  }
-  const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
-  const stationCols = cols.filter(c => c !== timeCol);
-  if (!stationCols.length){
-    const div=document.createElement('div');
-    div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent='Không tìm thấy cột trạm để tính tổng.';
-    host.appendChild(div);
-    return;
-  }
-  const totals = stationCols.map(name=>{
-    let sum = 0;
-    for (const r of rows){
-      const v = Number(String(r[name] ?? '').toString().replace(',','.'));
-      if (isFinite(v)) sum += v;
-    }
-    return { name, total: Number(sum.toFixed(1)) };
-  });
-
-  const title = document.createElement('div');
-  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
-  title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
-  host.appendChild(title);
-
-  const W = host.clientWidth || 800;
-  const H = 360;
-  const m = { l:50, r:16, t:12, b:90 };
-  const innerW = W - m.l - m.r;
-  const innerH = H - m.t - m.b;
-
-  const maxY = Math.max(1, ...totals.map(t => t.total));
-  const y = v => m.t + innerH - (v / maxY) * innerH;
-
-  const n = totals.length;
-  const slot = innerW / n;
-  const barW = Math.max(18, Math.min(52, slot * 0.7));
-  const x = i => m.l + i*slot + (slot - barW)/2;
-
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width','100%');
-  svg.setAttribute('height', H);
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  host.appendChild(svg);
-
-  // Lưới + ticks Y
-  const ticks = 5;
-  for (let i=0;i<=ticks;i++){
-    const v = (maxY / ticks) * i;
-    const yy = y(v);
-    const line = document.createElementNS(svg.namespaceURI,'line');
-    line.setAttribute('x1', m.l);
-    line.setAttribute('y1', yy);
-    line.setAttribute('x2', W - m.r);
-    line.setAttribute('y2', yy);
-    line.setAttribute('stroke', '#e2e8f0');
-    line.setAttribute('stroke-dasharray', '3 3');
-    svg.appendChild(line);
-
-    const t = document.createElementNS(svg.namespaceURI,'text');
-    t.setAttribute('x', m.l - 6);
-    t.setAttribute('y', yy + 4);
-    t.setAttribute('text-anchor','end');
-    t.setAttribute('font-size','11');
-    t.setAttribute('fill','#334155');
-    t.textContent = v.toFixed(1);
-    svg.appendChild(t);
-  }
-
-  // Cột + nhãn
-  totals.forEach((d, i) => {
-    const xx = x(i);
-    const yy = y(d.total);
-    const h  = (m.t + innerH) - yy;
-
-    const rect = document.createElementNS(svg.namespaceURI,'rect');
-    rect.setAttribute('x', xx);
-    rect.setAttribute('y', yy);
-    rect.setAttribute('width', barW);
-    rect.setAttribute('height', Math.max(0, h));
-    rect.setAttribute('rx', 4);
-    rect.setAttribute('fill', '#2563eb');
-    svg.appendChild(rect);
-
-    const label = document.createElementNS(svg.namespaceURI,'text');
-    label.setAttribute('x', xx + barW/2);
-    label.setAttribute('y', yy - 6);
-    label.setAttribute('text-anchor','middle');
-    label.setAttribute('font-size','11');
-    label.setAttribute('font-weight','700');
-    label.setAttribute('fill','#0f172a');
-    label.textContent = d.total.toFixed(1);
-    svg.appendChild(label);
-
-    // Nhãn tên trạm (xoay -55°)
-    const baseY = m.t + innerH + 48;
-    const tx = document.createElementNS(svg.namespaceURI,'text');
-    tx.setAttribute('x', xx + barW/2);
-    tx.setAttribute('y', baseY);
-    tx.setAttribute('text-anchor','end');
-    tx.setAttribute('font-size','11');
-    tx.setAttribute('fill','#334155');
-    tx.setAttribute('transform', `rotate(-55 ${xx + barW/2} ${baseY})`);
-    tx.textContent = d.name;
-    svg.appendChild(tx);
-  });
-
-  // Trục X (đáy)
-  const axis = document.createElementNS(svg.namespaceURI,'line');
-  axis.setAttribute('x1', m.l);
-  axis.setAttribute('y1', m.t + innerH);
-  axis.setAttribute('x2', W - m.r);
-  axis.setAttribute('y2', m.t + innerH);
-  axis.setAttribute('stroke', '#cbd5e1');
-  svg.appendChild(axis);
-}
-
-/* ====== AGGREGATES (1h/3h/6h and fixed 6h-blocks) ====== */
-
-/* Convert pivot rows into per-station series [{t:Date, v:number}, ...] */
+/* BUILD PER-STATION SERIES */
 function buildSeriesFromRows(rows){
   if(!rows?.length) return {};
   const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
-  const stationCols = cols.filter(c => c !== timeCol);
+  const timeCol = cols.find(c=>c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) || cols.find(c=>/time|date|ngay/i.test(c)) || cols[0];
+  const stationCols = cols.filter(c=>c!==timeCol);
   const series = {};
-  for(const name of stationCols) series[name] = [];
+  for(const s of stationCols) series[s]=[];
   for(const r of rows){
-    const tRaw = r[timeCol];
-    const t = parseTimeString(tRaw);
+    const tRaw = r[timeCol]; const t = parseTimeString(tRaw);
     if(!t) continue;
-    for(const name of stationCols){
-      const v = safeNum(r[name]);
-      if (!isFinite(v)) continue; // skip non-numeric
-      series[name].push({ t, v });
+    for(const s of stationCols){
+      const v = safeNum(r[s]);
+      if(!isFinite(v)) continue;
+      series[s].push({t, v});
     }
   }
-  // sort each
-  for(const k of Object.keys(series)){
-    series[k].sort((a,b)=>a.t - b.t);
-  }
+  for(const k of Object.keys(series)) series[k].sort((a,b)=>a.t-b.t);
   return series;
 }
 
-/* sliding window sums using two pointers, window in minutes */
+/* SLIDING window sums (for max 1h/3h/6h) - two pointers */
 function slidingWindowSums(series, windowMinutes){
-  const n = series.length;
-  const sums = new Array(n).fill(0);
-  if(n===0) return sums;
-  const windowMs = windowMinutes * 60 * 1000;
-  let left = 0;
-  let curSum = 0;
+  const n = series.length; if(n===0) return [];
+  const res = new Array(n).fill(0);
+  const winMs = windowMinutes*60*1000;
+  let left=0, cur=0;
   for(let right=0; right<n; right++){
-    curSum += series[right].v;
-    while(left <= right && (series[right].t - series[left].t) >= windowMs){
-      curSum -= series[left].v;
-      left++;
+    cur += series[right].v;
+    while(left<=right && (series[right].t - series[left].t) >= winMs){
+      cur -= series[left].v; left++;
     }
-    sums[right] = curSum;
+    res[right]=cur;
   }
-  return sums;
+  return res;
 }
-
-/* compute latest-window sum ending at endTime (inclusive of times > endTime - window) */
 function latestWindowSum(series, endTime, windowMinutes){
   if(!series || !series.length) return 0;
-  const windowMs = windowMinutes * 60 * 1000;
-  const startMs = endTime.getTime() - windowMs;
-  let sum = 0;
+  const winMs = windowMinutes*60*1000;
+  const startMs = endTime.getTime() - winMs;
+  let sum=0;
   for(let i=series.length-1;i>=0;i--){
-    const t = series[i].t.getTime();
-    if (t > endTime.getTime()) continue;
-    if (t <= startMs) break;
+    const tt = series[i].t.getTime();
+    if(tt> endTime.getTime()) continue;
+    if(tt <= startMs) break;
     sum += series[i].v;
   }
   return Number(sum.toFixed(1));
 }
 
-/* compute aggregates for one station series */
-function computeStationAggregates(series, endTime){
-  const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
-  const sums1h = slidingWindowSums(series, 60);
-  const sums3h = slidingWindowSums(series, 180);
-  const sums6h = slidingWindowSums(series, 360);
-  const max1h = sums1h.length? Math.max(...sums1h) : 0;
-  const max3h = sums3h.length? Math.max(...sums3h) : 0;
-  const max6h = sums6h.length? Math.max(...sums6h) : 0;
-  const latest3h = latestWindowSum(series, endTime, 180);
-  const latest6h = latestWindowSum(series, endTime, 360);
-  return {
-    total: Number(total.toFixed(1)),
-    max1h: Number(max1h.toFixed(1)),
-    max3h: Number(max3h.toFixed(1)),
-    max6h: Number(max6h.toFixed(1)),
-    latest3h,
-    latest6h
-  };
-}
-
-/* compute sums for fixed non-overlapping windows starting at startTime */
+/* FIXED non-overlapping windows sums (e.g., 6h blocks) - starting from startTime */
 function computeFixedWindowSums(series, windowMinutes, startTime, endTime){
-  const results = [];
-  const windowMs = windowMinutes * 60 * 1000;
-  if(!startTime || !endTime) return results;
+  const out = [];
+  if(!startTime || !endTime) return out;
+  const winMs = windowMinutes*60*1000;
+  if(!series) series = [];
+  series.sort((a,b)=>a.t-b.t);
   let curStart = new Date(startTime.getTime());
-  // ensure series sorted
-  if(series && series.length) series.sort((a,b)=>a.t - b.t);
-  while (curStart.getTime() < endTime.getTime()){
-    const curEnd = new Date(Math.min(curStart.getTime() + windowMs, endTime.getTime()));
+  while(curStart.getTime() < endTime.getTime()){
+    const curEnd = new Date(Math.min(curStart.getTime() + winMs, endTime.getTime()));
     let sum = 0;
     // sum points t >= curStart && t < curEnd
-    for (let i=0;i<series.length;i++){
+    for(let i=0;i<series.length;i++){
       const tt = series[i].t.getTime();
-      if (tt >= curStart.getTime() && tt < curEnd.getTime()){
-        sum += series[i].v;
-      }
-      if (tt >= curEnd.getTime()) break;
+      if(tt >= curStart.getTime() && tt < curEnd.getTime()) sum += series[i].v;
+      if(tt >= curEnd.getTime()) break;
     }
-    results.push({ start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1)) });
-    curStart = new Date(curStart.getTime() + windowMs);
+    out.push({start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1))});
+    curStart = new Date(curStart.getTime() + winMs);
   }
-  return results;
+  return out;
 }
 
-/* Render aggregates table in aggBox -> aggTableHolder */
-function renderAggregatesTable(aggregates){
-  const holder = $('#aggTableHolder');
-  if(!aggregates || !Object.keys(aggregates).length){ holder.innerHTML = '<div style="color:#64748b;font-size:13px">Không có dữ liệu tổng hợp.</div>'; $('#btnExportAgg').disabled = true; $('#btnExport6hBlocks').disabled = true; window.__lastAgg = []; return; }
-  const rows = Object.keys(aggregates).map(name => {
-    const a = aggregates[name];
-    return {
-      trạm: name,
-      'Tổng (mm)': a.total,
-      'Max 1h (mm)': a.max1h,
-      'Max 3h (mm)': a.max3h,
-      'Max 6h (mm)': a.max6h,
-      'Tổng 3h (gần nhất)': a.latest3h,
-      'Tổng 6h (gần nhất)': a.latest6h
-    };
+/* RENDER 6H MATRIX (table with columns per 6h block) */
+function render6hMatrix(seriesMap, startTime, endTime){
+  const holder = $('#matrixHolder'); holder.innerHTML = '';
+  if(!seriesMap || !Object.keys(seriesMap).length){ $('#matrixArea').style.display='none'; return; }
+  // build list of windows (same windows for all stations)
+  const winMs = 6*60*60*1000;
+  const windows = [];
+  let cur = new Date(startTime.getTime());
+  while(cur.getTime() < endTime.getTime()){
+    const nxt = new Date(Math.min(cur.getTime()+winMs, endTime.getTime()));
+    windows.push({start:new Date(cur), end:new Date(nxt)});
+    cur = new Date(cur.getTime()+winMs);
+  }
+  // build table
+  const tbl = document.createElement('table'); tbl.className='matrix-table';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  headRow.appendChild(document.createElement('th')).textContent = 'Tên trạm';
+  windows.forEach(w => {
+    const dt = w.start;
+    const hh = pad(dt.getHours()) + 'h';
+    const label = `${hh} Ngày ${pad(dt.getDate())}/${pad(dt.getMonth()+1)}`;
+    const th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
   });
-  // build html table
-  let html = '<table class="agg-table"><thead><tr><th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th><th>Tổng 3h (gần nhất)</th><th>Tổng 6h (gần nhất)</th></tr></thead><tbody>';
-  for(const r of rows){
-    html += `<tr><td>${r['trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h (mm)']}</td><td>${r['Max 3h (mm)']}</td><td>${r['Max 6h (mm)']}</td><td>${r['Tổng 3h (gần nhất)']}</td><td>${r['Tổng 6h (gần nhất)']}</td></tr>`;
+  thead.appendChild(headRow); tbl.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for(const name of Object.keys(seriesMap)){
+    const row = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className='station-col'; tdName.textContent = name; row.appendChild(tdName);
+    const series = seriesMap[name] || [];
+    for(const w of windows){
+      // sum series points within [w.start, w.end)
+      let s = 0;
+      for(let i=0;i<series.length;i++){
+        const tt = series[i].t.getTime();
+        if(tt >= w.start.getTime() && tt < w.end.getTime()) s += series[i].v;
+        if(tt >= w.end.getTime()) break;
+      }
+      const td = document.createElement('td'); td.textContent = s? s.toFixed(1) : '0.0'; row.appendChild(td);
+    }
+    tbody.appendChild(row);
   }
-  html += '</tbody></table>';
-  holder.innerHTML = html;
-  $('#btnExportAgg').disabled = false;
-  window.__lastAgg = rows;
+  tbl.appendChild(tbody);
+  holder.appendChild(tbl);
+  $('#matrixArea').style.display='block';
+  // save last matrix as CSV rows for download
+  const csvRows = [];
+  for(const name of Object.keys(seriesMap)){
+    const series = seriesMap[name]||[];
+    const rowObj = { trạm: name };
+    windows.forEach((w, i) => {
+      const key = `${pad(w.start.getHours())}h ${pad(w.start.getDate())}/${pad(w.start.getMonth()+1)}`;
+      // compute sum (same as above)
+      let s=0;
+      for(let j=0;j<series.length;j++){
+        const tt=series[j].t.getTime();
+        if(tt>=w.start.getTime() && tt < w.end.getTime()) s+=series[j].v;
+        if(tt>=w.end.getTime()) break;
+      }
+      rowObj[key] = s? s.toFixed(1) : '0.0';
+    });
+    csvRows.push(rowObj);
+  }
+  window.__last6hMatrix = { windows, rows: csvRows };
+  $('#btnExport6hBlocks').disabled = !(csvRows && csvRows.length);
 }
 
-/* ===== MAIN FLOW ===== */
-async function init(){
-  // mặc định: start = 00:00 của 2 ngày trước; end = now
-  const now=new Date(), s0=new Date(now); s0.setDate(now.getDate()-2); s0.setHours(0,0,0,0);
-  $('#startDt').value=toLocalDT(s0);
-  $('#endDt').value=toLocalDT(now);
-  setDateLimits();
-  $('#startDt').addEventListener('change', setDateLimits);
-  $('#endDt').addEventListener('change', setDateLimits);
+/* RENDER AGGREGATES SUMMARY TABLE */
+function renderAggregatesSummary(aggs){
+  // re-use earlier method to render table HTML inside aggTableHolder if wanted
+  // here we set window.__lastAgg for export
+  const arr = Object.keys(aggs).map(name => {
+    const a = aggs[name];
+    return { trạm: name, 'Tổng(mm)': a.total, 'Max1h': a.max1h, 'Max3h': a.max3h, 'Max6h': a.max6h, 'Tổng3h_latest': a.latest3h, 'Tổng6h_latest': a.latest6h };
+  });
+  window.__lastAgg = arr;
+  $('#btnExportAgg').disabled = !(arr && arr.length);
+}
 
-  // wire up floating export buttons to same actions as top toolbar
-  $('#btnExportFloating').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
+/* MAIN FLOW */
+async function init(){
+  // defaults
+  const now = new Date(); const s0 = new Date(now); s0.setDate(now.getDate()-2); s0.setHours(0,0,0,0);
+  $('#startDt').value = toLocalDT(s0);
+  $('#endDt').value = toLocalDT(now);
+
+  $('#btnAutoXlsx').addEventListener('click', async ()=>{ try{ await tryAutoLoadExcel(); } catch(e){ $('#xlsxStatus').textContent = e.message; }});
+  $('#fileXlsx').addEventListener('change', async ev => {
+    const f = ev.target.files?.[0]; if(!f) return;
+    try{ const ab = await f.arrayBuffer(); const wb = XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); } catch(e){ $('#xlsxStatus').textContent = e.message; }
+  });
+
+  // bind floating export buttons
+  $('#btnExportFloating').addEventListener('click', ()=> downloadCSV(window.__lastRows||[], 'rain_ketqua.csv'));
   $('#btnExportXlsxFloating').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
 
-  $('#btnAutoXlsx').addEventListener('click', async ()=>{ try{ await tryAutoLoadExcel(); }catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; } });
-  $('#fileXlsx').addEventListener('change', async ev=>{ const f=ev.target.files?.[0]; if(!f) return; try{ const ab=await f.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); } catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; } });
+  $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[], 'rain_ketqua.csv'));
+  $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
 
-  $('#btnFetch').addEventListener('click', async ()=>{
-    if(!stations.length){ alert('Chưa nạp danh sách trạm từ Excel.'); return; }
-    const pass=$('#passcode').value.trim();
-    let s=new Date($('#startDt').value), e=new Date($('#endDt').value);
-    if(!(s.getTime()<e.getTime())){ alert('Khoảng thời gian không hợp lệ.'); return; }
+  $('#btnExportAgg').addEventListener('click', ()=> {
+    const rows = window.__lastAgg || [];
+    if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
+    else alert('Không có dữ liệu tổng hợp.');
+  });
 
-    const indices=Array.from($('#multiSelect').selectedOptions).map(o=>Number(o.value));
-    if(!indices.length){ alert('Hãy chọn ít nhất 1 trạm.'); return; }
-
-    const tinhtong=$('#tinhtong').checked?1:0;
-
-    // giữ nguyên giờ:phút do người dùng chọn (theo yêu cầu)
-    const fmt=(dt)=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
-    const sStr=fmt(s), eStr=fmt(e);
-
-    const datasets={};
-    $('#summary').textContent='Đang lấy dữ liệu…';
-    await Promise.all(indices.map(async idx=>{
-      const r=stations[idx];
-      const ten_table=($('#tenTable').value.trim()||r.Tab||'mucnuoc_oday'); // tuỳ Excel
-      const sophut=Number($('#sophut').value||r.sophut||60)||60;
-      const params={ matram:r.matram, ten_table, sophut:String(sophut), tinhtong:String(tinhtong),
-                     thoigianbd:quote(sStr), thoigiankt:quote(eStr) };
-      if(pass) params.passcode=pass;
-      const url=buildProxyUrl(params);
-      try{
-        const data=await fetchJSON(url);
-        datasets[r.tentram||r.matram]=Array.isArray(data)?data:[];
-      }catch(e){
-        console.warn('Fetch lỗi', r.matram, e);
-        datasets[r.tentram||r.matram]=[];
-      }
-    }));
-
-    // pivot theo thời gian (giữ nguyên key 'thoi gian' như trước)
-    const timeIndex=new Map();
-    const names=Object.keys(datasets);
-    for(const n of names){
-      for(const row of (datasets[n]||[])){
-        const t=normTime(pickField(row, TIME_KEYS));
-        const v=pickField(row, VALUE_KEYS);
-        if(!t) continue;
-        if(!timeIndex.has(t)) timeIndex.set(t, {"thoi gian": t});
-        timeIndex.get(t)[n]=v;
-      }
-    }
-    const rows=Array.from(timeIndex.values())
-      .sort((a,b)=>String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
-
-    renderTable(rows);
-
-    // ----- Compute aggregates (1h/3h/6h etc) -----
-    if($('#showAggregates').checked){
-      const seriesMap = buildSeriesFromRows(rows); // per station arrays
-      const aggs = {};
-      // use endDt selected by user as endpoint for "latest" sums
-      const endEl = parseTimeString($('#endDt').value) || new Date();
-      const startEl = parseTimeString($('#startDt').value) || new Date();
-      for(const name of Object.keys(seriesMap)){
-        aggs[name] = computeStationAggregates(seriesMap[name], endEl);
-      }
-      renderAggregatesTable(aggs);
-
-      // Compute 6h-blocks across the period and store for CSV export
-      const all6hRows = [];
-      for(const name of Object.keys(seriesMap)){
-        const blocks = computeFixedWindowSums(seriesMap[name], 360, startEl, endEl);
-        for(const b of blocks){
-          all6hRows.push({
-            trạm: name,
-            window_start: b.start.toISOString().replace('T',' ').slice(0,19),
-            window_end:   b.end.toISOString().replace('T',' ').slice(0,19),
-            sum_mm: b.sum
-          });
-        }
-      }
-      window.__last6hBlocks = all6hRows;
-      $('#btnExport6hBlocks').disabled = !(all6hRows && all6hRows.length);
+  $('#btnExport6hBlocks').addEventListener('click', ()=> {
+    // prefer matrix CSV (wide). If not present, fallback to __last6hBlocks (flat)
+    if(window.__last6hMatrix && window.__last6hMatrix.rows && window.__last6hMatrix.rows.length){
+      downloadCSV(window.__last6hMatrix.rows, 'rain_6h_matrix.csv');
+    } else if(window.__last6hBlocks && window.__last6hBlocks.length){
+      downloadCSV(window.__last6hBlocks, 'rain_6h_blocks.csv');
     } else {
-      $('#aggTableHolder').innerHTML = '<div style="color:#64748b;font-size:13px">Tùy chọn hiển thị tổng hợp đang tắt.</div>';
-      $('#btnExportAgg').disabled = true;
-      $('#btnExport6hBlocks').disabled = true;
-      window.__lastAgg = [];
-      window.__last6hBlocks = [];
+      alert('Không có dữ liệu 6h để tải.');
     }
   });
 
   $('#btnClear').addEventListener('click', ()=>{
-    $('#thead').innerHTML=''; $('#tbody').innerHTML='';
-    $('#tfoot').innerHTML='';
-    $('#summary').textContent='Đã xoá kết quả.';
-    $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
-    $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
-    $('#btnExportAgg').disabled = true; $('#btnExport6hBlocks').disabled = true;
-    renderChart([]);
-    renderAggregatesTable({});
-    window.__last6hBlocks = [];
+    $('#thead').innerHTML=''; $('#tbody').innerHTML=''; $('#tfoot').innerHTML='';
+    $('#summary').textContent='Đã xoá kết quả.'; $('#matrixArea').style.display='none';
+    $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true; $('#btnExportFloating').disabled=true; $('#btnExportXlsxFloating').disabled=true;
+    $('#btnExportAgg').disabled=true; $('#btnExport6hBlocks').disabled=true;
+    window.__lastRows = []; window.__lastAgg=[]; window.__last6hBlocks=[]; window.__last6hMatrix=null;
   });
 
-  // Export (top toolbar)
-  $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
-  $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
-  // floating export binds
-  // (already bound above)
-  // Export aggregate
-  $('#btnExportAgg').addEventListener('click', ()=> {
-    const rows = window.__lastAgg || [];
-    if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
-  });
-  // Export 6h-blocks
-  $('#btnExport6hBlocks').addEventListener('click', ()=> {
-    const rows = window.__last6hBlocks || [];
-    if(rows && rows.length) downloadCSV(rows, 'rain_6h_blocks.csv');
-    else alert('Không có dữ liệu 6h-block để tải.');
+  $('#btnFetch').addEventListener('click', async ()=>{
+    if(!stations.length){ alert('Chưa nạp danh sách trạm từ Excel.'); return; }
+    const pass = $('#passcode').value.trim();
+    const s = parseTimeString($('#startDt').value); const e = parseTimeString($('#endDt').value);
+    if(!s || !e || !(s.getTime() < e.getTime())){ alert('Khoảng thời gian không hợp lệ.'); return; }
+    const indices = Array.from($('#multiSelect').selectedOptions).map(o=>Number(o.value));
+    if(!indices.length){ alert('Hãy chọn ít nhất 1 trạm.'); return; }
+    const tinhtong = $('#tinhtong').checked ? 1 : 0;
+
+    $('#summary').textContent = 'Đang lấy dữ liệu...';
+
+    // fetch per station
+    const datasets = {};
+    await Promise.all(indices.map(async idx => {
+      const r = stations[idx];
+      const ten_table = (r.Tab || 'mucnuoc_oday');
+      const sophut = Number($('#sophut').value || r.sophut || 60) || 60;
+      const params = { matram: r.matram, ten_table, sophut: String(sophut), tinhtong: String(tinhtong),
+                       thoigianbd: quote(`${s.getFullYear()}-${pad(s.getMonth()+1)}-${pad(s.getDate())} ${pad(s.getHours())}:${pad(s.getMinutes())}:00`),
+                       thoigiankt: quote(`${e.getFullYear()}-${pad(e.getMonth()+1)}-${pad(e.getDate())} ${pad(e.getHours())}:${pad(e.getMinutes())}:00`) };
+      if(pass) params.passcode = pass;
+      const url = buildProxyUrl(params);
+      try{
+        const data = await fetchJSON(url);
+        datasets[r.tentram||r.matram] = Array.isArray(data) ? data : [];
+      }catch(err){
+        console.warn('fetch error', err);
+        datasets[r.tentram||r.matram] = [];
+      }
+    }));
+
+    // pivot by time
+    const timeIndex = new Map();
+    const names = Object.keys(datasets);
+    for(const n of names){
+      for(const row of (datasets[n]||[])){
+        const t = normTime(pickField(row, TIME_KEYS));
+        const v = pickField(row, VALUE_KEYS);
+        if(!t) continue;
+        if(!timeIndex.has(t)) timeIndex.set(t, { 'thoi gian': t });
+        timeIndex.get(t)[n] = v;
+      }
+    }
+    const rows = Array.from(timeIndex.values()).sort((a,b)=> String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
+    renderTable(rows);
+
+    // compute aggregates and 6h-blocks
+    if($('#showAggregates').checked){
+      const seriesMap = buildSeriesFromRows(rows);
+      const aggs = {};
+      for(const name of Object.keys(seriesMap)){
+        const series = seriesMap[name];
+        // total, max sliding windows, latest windows (end time = e)
+        const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
+        const max1h = (slidingWindowSums(series,60).length ? Math.max(...slidingWindowSums(series,60)) : 0);
+        const max3h = (slidingWindowSums(series,180).length ? Math.max(...slidingWindowSums(series,180)) : 0);
+        const max6h = (slidingWindowSums(series,360).length ? Math.max(...slidingWindowSums(series,360)) : 0);
+        const latest3h = latestWindowSum(series, e, 180);
+        const latest6h = latestWindowSum(series, e, 360);
+        aggs[name] = { total: Number(total.toFixed(1)), max1h: Number(max1h.toFixed(1)), max3h: Number(max3h.toFixed(1)), max6h: Number(max6h.toFixed(1)), latest3h, latest6h };
+      }
+      renderAggregatesSummary(aggs);
+
+      // 6h BLOCKS: two representations:
+      // 1) flat list (trạm, window_start, window_end, sum) -> __last6hBlocks
+      // 2) matrix (station rows x windows cols) -> __last6hMatrix
+      const flat = [];
+      for(const name of Object.keys(seriesMap)){
+        const blocks = computeFixedWindowSums(seriesMap[name], 360, s, e);
+        for(const b of blocks){
+          flat.push({ trạm: name, window_start: b.start.toISOString().replace('T',' ').slice(0,19), window_end: b.end.toISOString().replace('T',' ').slice(0,19), sum_mm: b.sum });
+        }
+      }
+      window.__last6hBlocks = flat;
+      $('#btnExport6hBlocks').disabled = !(flat && flat.length);
+
+      // matrix view
+      render6hMatrix(seriesMap, s, e);
+    } else {
+      $('#btnExportAgg').disabled = true; $('#btnExport6hBlocks').disabled = true;
+      $('#matrixArea').style.display='none';
+      window.__lastAgg = []; window.__last6hBlocks = []; window.__last6hMatrix = null;
+    }
   });
 
-  try{ await tryAutoLoadExcel(); }
-  catch(e){ $('#xlsxStatus').className='status'; $('#xlsxStatus').textContent='Không tìm thấy file mặc định. Hãy chọn file .xlsx thủ công.'; }
+  // try load xlsx automatically
+  try{ await tryAutoLoadExcel(); } catch(e){ $('#xlsxStatus').textContent = 'Không tìm thấy file mặc định. Chọn thủ công.'; }
 }
+
 window.addEventListener('DOMContentLoaded', init);
 </script>
 
