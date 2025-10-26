@@ -24,7 +24,7 @@
     /* ===== HEADER ===== */
     header{
       width:100%; max-width:1600px;
-      position:sticky; top:0; z-index:4;
+      position:sticky; top:0; z-index:6;
       background:linear-gradient(180deg,#fff, #fff 70%, rgba(255,255,255,.6));
       border-bottom:1px solid var(--grid); padding:18px 16px;
     }
@@ -57,7 +57,7 @@
     }
     .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
     .full{grid-column:1/-1}
-    .btn{background:var(--pri); color:#fff; border:none; cursor:pointer; font-weight:700}
+    .btn{background:var(--pri); color:#fff; border:none; cursor:pointer; font-weight:700; padding:12px 18px; border-radius:12px}
     .btn.secondary{background:#64748b}
     .btn.ghost{background:#eef2ff; color:#1e40af}
     .btn:disabled{opacity:.6; cursor:not-allowed}
@@ -67,7 +67,7 @@
     /* ===== TOOLBAR ===== */
     .toolbar{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
-      position:sticky; top:calc(64px + 16px); z-index:3;
+      position:sticky; top:calc(64px + 16px); z-index:5;
     }
     .summary{font-size:13px; color:#1f2937}
     .toolbar-actions{display:flex; gap:8px}
@@ -81,7 +81,7 @@
     }
 
     /* ===== TABLE (LOG) ===== */
-    .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff}
+    .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff; position:relative}
     table{width:max-content; border-collapse:separate; border-spacing:0; font-size:12px; white-space:nowrap}
     thead th, tbody td{
       padding:8px 12px; text-align:center; vertical-align:middle;
@@ -89,11 +89,25 @@
     }
     thead th:first-child, tbody td:first-child{border-left:1.5px solid var(--grid-strong)}
     thead th{
-      position:sticky; top:0; z-index:2; background:#f1f5f9; border-bottom-color:#64748b;
+      position:sticky; top:0; z-index:4; background:#f1f5f9; border-bottom-color:#64748b;
       font-weight:800;
     }
-    thead th:first-child{left:0; z-index:4}
-    tbody td:first-child{position:sticky; left:0; background:#fff; z-index:3; text-align:left}
+    thead th:first-child{left:0; z-index:6}
+    tbody td:first-child{position:sticky; left:0; background:#fff; z-index:5; text-align:left}
+
+    /* floating table-actions (fixed inside the scroll area where buttons originally were)
+       Using position: sticky keeps it at top of the scroll viewport while inside container */
+    .table-actions{
+      position:sticky;
+      top:48px; /* adjust so it appears below header/thead */
+      z-index:7;
+      display:flex;
+      gap:12px;
+      padding:10px 0;
+      background:linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.8));
+      align-items:center;
+    }
+    .table-actions .btn{padding:14px 22px;border-radius:14px;font-size:18px;font-weight:800}
 
     /* ===== DATETIME ===== */
     .dt{display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; position:relative; z-index:30;}
@@ -216,7 +230,7 @@
     <div class="section">
       <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h)</label>
-      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn.</div>
+      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn. "Tổng 3h/6h (gần nhất)" dùng endDt làm thời điểm kết thúc.</div>
       <div style="margin-top:8px">
         <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
       </div>
@@ -238,6 +252,12 @@
     <div class="card" style="padding:12px">
       <div class="results-grid">
         <div class="scroll" id="tableBox" style="padding:0">
+          <!-- sticky table actions: fixed at the top of the scroll area near the table (chỗ khoanh đỏ) -->
+          <div class="table-actions" id="tableActions">
+            <button id="btnExportFloating" class="btn ghost">Tải CSV</button>
+            <button id="btnExportXlsxFloating" class="btn ghost">Tải Excel (.xlsx)</button>
+          </div>
+
           <table id="dataTable" class="rain-table">
             <thead><tr id="thead"></tr></thead>
             <tbody id="tbody"></tbody>
@@ -253,7 +273,7 @@
 
           <!-- Aggregates table (mới) -->
           <div id="aggBox" style="padding:8px;background:#fff;border-radius:8px;border:1px solid #eef2f6;overflow:auto">
-            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h)</div>
+            <div style="font-size:12px;color:#64748b;margin-bottom:6px">Bảng tổng hợp (Tổng khoảng thời gian, Max 1h/3h/6h, Tổng 3h/6h gần nhất tại endDt)</div>
             <div id="aggTableHolder" style="max-height:240px; overflow:auto"></div>
           </div>
         </div>
@@ -380,6 +400,7 @@ function renderTable(rows){
     thead.innerHTML='<th>(trống)</th>';
     $('#summary').textContent='Không có dữ liệu để hiển thị.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
+    $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
     renderChart([]);  // dọn chart
     $('#btnExportAgg').disabled = true;
     $('#aggTableHolder').innerHTML = '';
@@ -447,6 +468,8 @@ function renderTable(rows){
   $('#summary').textContent = `Hiển thị ${rows.length} mốc thời gian — ${stationCols.length} trạm.`;
   $('#btnExport').disabled = false;
   $('#btnExportXlsx').disabled = false;
+  $('#btnExportFloating').disabled = false;
+  $('#btnExportXlsxFloating').disabled = false;
   window.__lastRows = rows;
 
   // VẼ BIỂU ĐỒ CỘT theo TỔNG từng trạm
@@ -492,35 +515,27 @@ function parseTimeString(t){
   if (!s) return null;
 
   // Replace common separators and ensure seconds exist
-  // Accept formats: "YYYY-MM-DD HH:MM:SS", "YYYY/MM/DD HH:MM", "DD/MM/YYYY HH:MM", ISO...
-  // Heuristic: if starts with 4-digit year -> treat as yyyy-mm-dd
   try {
-    // if contains '/' and first part length==2 likely dd/mm/yyyy -> convert to yyyy-mm-dd
     if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
       const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
-      // rebuild as yyyy-mm-dd HH:MM:SS if time exists
       const timePart = rest.length? (' ' + rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')): '';
       s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${timePart}`;
     }
-    // If contains '-' and starts with 4-digit => likely ISO-ish; ensure 'T' replaced with space
-    s = s.replace('T',' ').replace(/\.\d+$/,''); // drop ms
-    // If no seconds, add :00
+    s = s.replace('T',' ').replace(/\.\d+$/,'');
     const dtParts = s.split(' ');
     if (dtParts.length === 2 && dtParts[1].split(':').length === 2) s = s + ':00';
     const dObj = new Date(s);
     if (!isNaN(dObj.getTime())) return dObj;
   } catch(e){ }
-  // final fallback: Date.parse
   const d2 = new Date(Date.parse(s));
   return isNaN(d2.getTime())? null : d2;
 }
 
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
+/* (unchanged) */
 function renderChart(rows){
   const host = $('#chartBox');
   host.innerHTML = '';
-
-  // Không có dữ liệu
   if (!Array.isArray(rows) || !rows.length){
     const div=document.createElement('div');
     div.style.cssText='font-size:12px;color:#64748b';
@@ -528,8 +543,6 @@ function renderChart(rows){
     host.appendChild(div);
     return;
   }
-
-  // Xác định cột thời gian & cột trạm
   const cols = Object.keys(rows[0]);
   const timeCol =
     cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
@@ -543,8 +556,6 @@ function renderChart(rows){
     host.appendChild(div);
     return;
   }
-
-  // Tính tổng theo từng trạm
   const totals = stationCols.map(name=>{
     let sum = 0;
     for (const r of rows){
@@ -652,13 +663,10 @@ function renderChart(rows){
 }
 
 /* ====== AGGREGATES (1h/3h/6h) ======
-   We'll compute for each station series:
+   compute:
    - total over period
    - max sliding-window sum over windows 60, 180, 360 minutes
-   Implementation:
-   - Convert series timestamps -> Date
-   - For each timestamp as window-end, sum values with time > end - windowMinutes
-   - Use efficient two-pointer on sorted series
+   - latest-window sum ending at endTime for 180 and 360 minutes
 */
 
 /* Convert pivot rows into per-station series [{t:Date, v:number}, ...] */
@@ -691,8 +699,6 @@ function buildSeriesFromRows(rows){
 
 /* sliding window sums using two pointers, window in minutes */
 function slidingWindowSums(series, windowMinutes){
-  // input: series sorted by t ascending [{t:Date, v}]
-  // output: array of sums where each sum corresponds to window ending at series[i].t
   const n = series.length;
   const sums = new Array(n).fill(0);
   if(n===0) return sums;
@@ -701,7 +707,6 @@ function slidingWindowSums(series, windowMinutes){
   let curSum = 0;
   for(let right=0; right<n; right++){
     curSum += series[right].v;
-    // move left until window fits: include points with t > series[right].t - windowMs
     while(left <= right && (series[right].t - series[left].t) >= windowMs){
       curSum -= series[left].v;
       left++;
@@ -711,22 +716,40 @@ function slidingWindowSums(series, windowMinutes){
   return sums;
 }
 
+/* compute latest-window sum ending at endTime (inclusive of times > endTime - window) */
+function latestWindowSum(series, endTime, windowMinutes){
+  if(!series || !series.length) return 0;
+  const windowMs = windowMinutes * 60 * 1000;
+  const startMs = endTime.getTime() - windowMs;
+  let sum = 0;
+  for(let i=series.length-1;i>=0;i--){
+    const t = series[i].t.getTime();
+    if (t > endTime.getTime()) continue; // future points ignore
+    if (t <= startMs) break;
+    sum += series[i].v;
+  }
+  return Number(sum.toFixed(1));
+}
+
 /* compute aggregates for one station series */
-function computeStationAggregates(series){ // series: [{t,v},...]
-  // total over series
+function computeStationAggregates(series, endTime){
   const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
-  // sliding sums
   const sums1h = slidingWindowSums(series, 60);
   const sums3h = slidingWindowSums(series, 180);
   const sums6h = slidingWindowSums(series, 360);
   const max1h = sums1h.length? Math.max(...sums1h) : 0;
   const max3h = sums3h.length? Math.max(...sums3h) : 0;
   const max6h = sums6h.length? Math.max(...sums6h) : 0;
+  // latest-window sums ending at endTime
+  const latest3h = latestWindowSum(series, endTime, 180);
+  const latest6h = latestWindowSum(series, endTime, 360);
   return {
     total: Number(total.toFixed(1)),
     max1h: Number(max1h.toFixed(1)),
     max3h: Number(max3h.toFixed(1)),
-    max6h: Number(max6h.toFixed(1))
+    max6h: Number(max6h.toFixed(1)),
+    latest3h,
+    latest6h
   };
 }
 
@@ -741,13 +764,15 @@ function renderAggregatesTable(aggregates){
       'Tổng (mm)': a.total,
       'Max 1h (mm)': a.max1h,
       'Max 3h (mm)': a.max3h,
-      'Max 6h (mm)': a.max6h
+      'Max 6h (mm)': a.max6h,
+      'Tổng 3h (gần nhất)': a.latest3h,
+      'Tổng 6h (gần nhất)': a.latest6h
     };
   });
   // build html table
-  let html = '<table class="agg-table"><thead><tr><th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th></tr></thead><tbody>';
+  let html = '<table class="agg-table"><thead><tr><th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th><th>Tổng 3h (gần nhất)</th><th>Tổng 6h (gần nhất)</th></tr></thead><tbody>';
   for(const r of rows){
-    html += `<tr><td>${r['trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h (mm)']}</td><td>${r['Max 3h (mm)']}</td><td>${r['Max 6h (mm)']}</td></tr>`;
+    html += `<tr><td>${r['trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h (mm)']}</td><td>${r['Max 3h (mm)']}</td><td>${r['Max 6h (mm)']}</td><td>${r['Tổng 3h (gần nhất)']}</td><td>${r['Tổng 6h (gần nhất)']}</td></tr>`;
   }
   html += '</tbody></table>';
   holder.innerHTML = html;
@@ -765,14 +790,12 @@ async function init(){
   $('#startDt').addEventListener('change', setDateLimits);
   $('#endDt').addEventListener('change', setDateLimits);
 
-  $('#btnAutoXlsx').addEventListener('click', async ()=>{
-    try{ await tryAutoLoadExcel(); }catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; }
-  });
-  $('#fileXlsx').addEventListener('change', async ev=>{
-    const f=ev.target.files?.[0]; if(!f) return;
-    try{ const ab=await f.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); }
-    catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; }
-  });
+  // wire up floating export buttons to same actions as top toolbar
+  $('#btnExportFloating').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
+  $('#btnExportXlsxFloating').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
+
+  $('#btnAutoXlsx').addEventListener('click', async ()=>{ try{ await tryAutoLoadExcel(); }catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; } });
+  $('#fileXlsx').addEventListener('change', async ev=>{ const f=ev.target.files?.[0]; if(!f) return; try{ const ab=await f.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); } catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; } });
 
   $('#btnFetch').addEventListener('click', async ()=>{
     if(!stations.length){ alert('Chưa nạp danh sách trạm từ Excel.'); return; }
@@ -829,8 +852,11 @@ async function init(){
     if($('#showAggregates').checked){
       const seriesMap = buildSeriesFromRows(rows); // per station arrays
       const aggs = {};
+      // use endDt selected by user as endpoint for "latest" sums
+      const endEl = $('#endDt').value ? parseTimeString($('#endDt').value) : new Date();
+      const endTime = endEl instanceof Date ? endEl : new Date();
       for(const name of Object.keys(seriesMap)){
-        aggs[name] = computeStationAggregates(seriesMap[name]);
+        aggs[name] = computeStationAggregates(seriesMap[name], endTime);
       }
       renderAggregatesTable(aggs);
     } else {
@@ -845,13 +871,15 @@ async function init(){
     $('#tfoot').innerHTML='';
     $('#summary').textContent='Đã xoá kết quả.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
+    $('#btnExportFloating').disabled = true; $('#btnExportXlsxFloating').disabled = true;
     renderChart([]);
     renderAggregatesTable({});
   });
 
-  // Export
+  // Export (top toolbar)
   $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
   $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
+  // Export aggregate
   $('#btnExportAgg').addEventListener('click', ()=> {
     const rows = window.__lastAgg || [];
     if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
