@@ -364,7 +364,7 @@ function fillStationSelects(){
     o.value=i; o.textContent=(r.tentram||'(không tên)').trim();
     box.appendChild(o);
   });
-  for(let i=0;i<Math.min(4,stations.length);i++){ box.options[i].selected=true; }
+    for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
 }
 
 /* ====== MÀU THEO NGƯỠNG + HÀNG TỔNG ====== */
