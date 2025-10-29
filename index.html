@@ -81,7 +81,7 @@
     }
 
     /* ===== TABLE (LOG) ===== */
-    .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff'}
+    .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff}
     table{width:max-content; border-collapse:separate; border-spacing:0; font-size:12px; white-space:nowrap}
     thead th, tbody td{
       padding:8px 12px; text-align:center; vertical-align:middle;
@@ -511,6 +511,7 @@ function parseTimeString(t){
 }
 
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
+/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
 function renderChart(rows){
   const host = $('#chartInner');
   host.innerHTML = '';
@@ -551,11 +552,11 @@ function renderChart(rows){
 
   // --- Tiêu đề và dòng thời gian ---
   const title = document.createElement('div');
-  title.id = 'chartTitle';
   title.style.cssText='font-size:13px;color:#0f172a;font-weight:800;margin-bottom:6px';
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
+  // Dòng khoảng thời gian (màu xanh nước biển, đậm hơn)
   const startVal = $('#startDt').value;
   const endVal = $('#endDt').value;
   if (startVal && endVal){
@@ -564,8 +565,7 @@ function renderChart(rows){
     const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
     const txt = `Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
     const range = document.createElement('div');
-    range.id = 'chartRange';
-    range.style.cssText='font-size:14px;color:#1e3a8a;font-weight:900;margin-bottom:10px';
+    range.style.cssText='font-size:11px;color:#1e3a8a;font-weight:600;margin-bottom:10px';
     range.textContent = txt;
     host.appendChild(range);
   }
@@ -598,24 +598,6 @@ function renderChart(rows){
 
   // Lề trái đủ rộng để không che trục (cộng thêm 14px đệm)
   m.l = Math.ceil(maxLabelW + 14);
-
-  // Lấy padding trái của chartBox để căn chỉnh chính xác (thường là 12px trong HTML)
-  let chartBoxPaddingLeft = 12;
-  try {
-    const cb = document.getElementById('chartBox');
-    if (cb) {
-      const cs = getComputedStyle(cb);
-      const pl = parseFloat(cs.paddingLeft || '12');
-      if (!isNaN(pl)) chartBoxPaddingLeft = pl;
-    }
-  } catch(e){ /* ignore */ }
-
-  // --- Căn chỉnh tiêu đề & dòng thời gian để chúng thẳng hàng với trục Y ---
-  const titleEl = document.getElementById('chartTitle');
-  if (titleEl) titleEl.style.marginLeft = (m.l - chartBoxPaddingLeft) + 'px';
-
-  const rangeEl = document.getElementById('chartRange');
-  if (rangeEl) rangeEl.style.marginLeft = (m.l - chartBoxPaddingLeft) + 'px';
 
   const innerW = W - m.l - m.r;
   const innerH = H - m.t - m.b;
@@ -655,9 +637,6 @@ function renderChart(rows){
     svg.appendChild(t);
   }
 
-  // Chọn font-size cho label trên cột dựa vào barW (nhỏ vừa đủ)
-  const labelFontSize = Math.max(8, Math.min(12, Math.floor(barW / 3)));
-
   // Vẽ cột
   totals.forEach((d, i) => {
     const xx = x(i);
@@ -677,8 +656,8 @@ function renderChart(rows){
     label.setAttribute('x', xx + barW/2);
     label.setAttribute('y', yy - 6);
     label.setAttribute('text-anchor','middle');
-    label.setAttribute('font-size', String(labelFontSize));
-    label.setAttribute('font-weight','700');
+    label.setAttribute('font-size','9');
+    label.setAttribute('font-weight','500');
     label.setAttribute('fill','#0f172a');
     label.textContent = d.total.toFixed(1);
     svg.appendChild(label);
@@ -704,6 +683,7 @@ function renderChart(rows){
   axis.setAttribute('stroke', '#cbd5e1');
   svg.appendChild(axis);
 }
+
 
 /* ===== AGGREGATES: sliding windows + fixed 6h blocks ===== */
 
