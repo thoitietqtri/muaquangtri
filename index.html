@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</title>
 
+  <!-- ====== Base UI ====== -->
   <style>
     :root{
       --bg:#f6f8ff; --card:#fff; --txt:#0f172a; --muted:#64748b; --pri:#1d4ed8;
@@ -20,6 +21,7 @@
       display:grid; place-items:center; min-height:100vh;
     }
 
+    /* ===== HEADER ===== */
     header{
       width:100%; max-width:1600px;
       position:sticky; top:0; z-index:4;
@@ -30,6 +32,7 @@
     .title .l1{font-size:26px; text-transform:uppercase}
     .title .l2{font-size:13px; color:#334155; margin-top:6px; font-weight:600}
 
+    /* ===== LAYOUT ===== */
     .shell{
       width:min(1600px, 100vw - 24px);
       margin:16px auto;
@@ -46,6 +49,7 @@
     }
     .section-title .tag{font-size:11px; background:#e2e8f0; color:#334155; border-radius:999px; padding:2px 8px}
 
+    /* ===== FORM ===== */
     label{font-size:12px; color:var(--muted); display:block; margin:4px 0}
     input,select,button,textarea{
       width:100%; padding:10px 12px; border:1px solid #cbd5e1; border-radius:10px;
@@ -60,6 +64,7 @@
     .status{font-size:12px; margin-top:6px}
     .status.ok{color:var(--ok)} .status.err{color:var(--err)}
 
+    /* ===== TOOLBAR ===== */
     .toolbar{
       display:flex; align-items:center; justify-content:space-between; gap:10px;
       position:sticky; top:calc(64px + 16px); z-index:3;
@@ -67,6 +72,7 @@
     .summary{font-size:13px; color:#1f2937}
     .toolbar-actions{display:flex; gap:8px}
 
+    /* ===== RESULTS GRID (table left + chart right) ===== */
     .results-grid{
       display:grid;
       grid-template-columns:minmax(440px,48%) 1fr;
@@ -74,6 +80,7 @@
       align-items:start;
     }
 
+    /* ===== TABLE (LOG) ===== */
     .scroll{overflow:auto; border:1px solid var(--grid); border-radius:12px; background:#fff}
     table{width:max-content; border-collapse:separate; border-spacing:0; font-size:12px; white-space:nowrap}
     thead th, tbody td{
@@ -88,31 +95,26 @@
     thead th:first-child{left:0; z-index:4}
     tbody td:first-child{position:sticky; left:0; background:#fff; z-index:3; text-align:left}
 
+    /* ===== DATETIME ===== */
     .dt{display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:end; position:relative; z-index:30;}
     .dt input[type="datetime-local"]{
       height:44px; background:#f8fafc; border:1.5px solid var(--grid-strong); font-weight:600; letter-spacing:.2px;
       padding-right:36px; position:relative; z-index:31;
     }
 
+    /* ===== AGGREGATE table inside chartBox (kept minimal, reuse rain-table look) ===== */
     .agg-table{width:100%;border-collapse:collapse;margin-top:8px}
     .agg-table th,.agg-table td{padding:7px 8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
     .agg-table thead th{background:#f8fafc;font-weight:800}
 
-    .range-text{ color:#1e40af; font-weight:800; margin-bottom:8px; font-size:12px; }
-
-    @media (max-width:1100px){ .shell{grid-template-columns:1fr} .toolbar{top:calc(64px + 8px)} .results-grid{grid-template-columns:1fr} }
-
-    /* --- chỉnh để biểu đồ sát lề trái: tăng sang -10px, và đảm bảo svg block --- */
-    .chart-container {
-      position: relative;
-      margin-left: -12px;   /* đè bù padding trái .card */
-      margin-right: -12px;
-      padding: 0;
-      overflow: visible;
+    @media (max-width:1100px){
+      .shell{grid-template-columns:1fr}
+      .toolbar{top:calc(64px + 8px)}
+      .results-grid{grid-template-columns:1fr}
     }
-    .chart-container svg { display: block; width:100%; height:auto; }
   </style>
 
+  <!-- ====== Styles riêng cho app mưa (bảng + chart) ====== -->
   <style>
   body{margin:0;background:#f1f5f9;font-family:Inter,system-ui,Avenir,Helvetica,Arial,sans-serif}
   .container{max-width:1280px;margin:18px auto;padding:12px}
@@ -136,8 +138,10 @@
   .rain-table tbody tr:nth-child(odd) td{background:#fcfcfd}
   .rain-table tfoot td{font-weight:900;color:#c1121f;background:#fff5f5}
   .mm-black{color:#111827;font-weight:700}.mm-green{color:#16a34a;font-weight:800}.mm-purple{color:#7c3aed;font-weight:800}.mm-red{color:#dc2626;font-weight:900}
+  @media (max-width:1100px){.layout{grid-template-columns:1fr}.right-pane{position:static}}
   </style>
 
+  <!-- XLSX reader -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -149,7 +153,9 @@
 </header>
 
 <div class="shell">
+  <!-- ===== SIDEBAR ===== -->
   <aside class="card">
+    <!-- Nguồn dữ liệu -->
     <div class="section">
       <h3 class="section-title">Nguồn dữ liệu <span class="tag">Excel + API</span></h3>
       <div class="row">
@@ -167,6 +173,7 @@
 
     <hr style="border:none;border-top:1px solid var(--grid); margin:10px 0">
 
+    <!-- Chọn trạm & thời gian -->
     <div class="section">
       <h3 class="section-title">Chọn trạm & thời gian</h3>
       <label>Chọn các trạm (Giữ Ctrl/Shift để chọn nhiều)</label>
@@ -198,6 +205,7 @@
       <label style="margin-top:8px"><input type="checkbox" id="tinhtong" checked> Tính tổng theo ngày (tinhtong=1)</label>
     </div>
 
+    <!-- Thao tác -->
     <div class="section">
       <h3 class="section-title">Thao tác</h3>
       <div class="row">
@@ -206,6 +214,7 @@
       </div>
     </div>
 
+    <!-- Thêm cấu phần tuỳ chọn tổng hợp (nhỏ, không thay đổi giao diện) -->
     <div class="section">
       <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
       <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h & 6h-blocks)</label>
@@ -217,6 +226,7 @@
 
   </aside>
 
+  <!-- ===== MAIN ===== -->
   <main style="display:grid; gap:16px;">
     <div class="card toolbar">
       <div class="summary" id="summary">Chưa có dữ liệu. Hãy chọn trạm & thời gian rồi bấm “Lấy dữ liệu”.</div>
@@ -226,6 +236,7 @@
       </div>
     </div>
 
+    <!-- KẾT QUẢ: bảng trái + đồ thị phải -->
     <div class="card" style="padding:12px">
       <div class="results-grid">
         <div class="scroll" id="tableBox" style="padding:0">
@@ -236,11 +247,13 @@
           </table>
         </div>
 
+        <!-- Chart box + agregates (giữ nguyên giao diện, thêm phần tổng hợp trong box này) -->
         <div id="chartBox" class="card" style="min-height:360px; padding:12px;">
           <div id="chartInner" style="font-size:12px;color:#64748b">
             Chưa có dữ liệu để vẽ đồ thị.
           </div>
 
+          <!-- AGGREGATES AREA: hiển thị bảng tổng hợp  và 6h-blocks -->
           <div id="aggArea" style="margin-top:12px; display:none">
             <div style="margin-bottom:8px; font-weight:800; color:#0f172a">BẢNG MƯA LỚN NHẤT THEO TỪNG THỜI ĐOẠN</div>
             <div id="aggSummaryHolder"></div>
@@ -255,10 +268,12 @@
 </div>
 
 <script>
+/* ===== CONFIG (Netlify Proxy) ===== */
 const API_PROXY = "/.netlify/functions/proxy";
 const DEFAULT_XLSX_PATH = "/thamso_khaithac.xlsx";
 const EXCEL_SHEET = "KhaibaoQuangtri";
 
+/* ===== UTIL ===== */
 const $ = s => document.querySelector(s);
 const pad = n => String(n).padStart(2,"0");
 const toLocalDatetimeValue = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -267,20 +282,7 @@ function buildProxyUrl(p){ return `${API_PROXY}?` + new URLSearchParams(p).toStr
 
 function safeNum(v){ const n=Number(String(v??'').toString().replace(',','.')); return isFinite(n)?n:NaN; }
 
-function formatVNDatetime(input){
-  if(!input) return '';
-  let d = null;
-  if(input instanceof Date) d = input;
-  else d = parseTimeString(input) || parseTimeString(input.replace('T',' '));
-  if(!d) return String(input);
-  const hh = pad(d.getHours());
-  const mm = pad(d.getMinutes());
-  const DD = pad(d.getDate());
-  const MM = pad(d.getMonth()+1);
-  const YYYY = d.getFullYear();
-  return `${hh}h${mm} ngày ${DD}/${MM}/${YYYY}`;
-}
-
+/* CSV/XLSX Export */
 function toCSV(rows){
   if(!rows?.length) return "";
   const cols = Object.keys(rows[0]);
@@ -307,6 +309,7 @@ function downloadXLSX(rows){
   XLSX.writeFile(wb, 'rain_ketqua.xlsx');
 }
 
+/* Fetch JSON (fallback AllOrigins nếu CORS lỗi) */
 async function fetchJSON(url){
   async function doFetch(u){
     const res = await fetch(u, { credentials:'include' });
@@ -322,6 +325,7 @@ async function fetchJSON(url){
   }
 }
 
+/* ===== READ EXCEL (STATIONS) ===== */
 let stations=[];
 function normalizeRow(r){
   const pick=(a,b)=> (a!==undefined && a!=='')?a:b;
@@ -352,6 +356,7 @@ async function tryAutoLoadExcel(){
   loadFromWorkbook(wb);
 }
 
+/* ===== UI ===== */
 function fillStationSelects(){
   const box=$('#multiSelect'); box.innerHTML='';
   stations.forEach((r,i)=>{
@@ -359,9 +364,10 @@ function fillStationSelects(){
     o.value=i; o.textContent=(r.tentram||'(không tên)').trim();
     box.appendChild(o);
   });
-    for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
+for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
 }
 
+/* ====== MÀU THEO NGƯỠNG + HÀNG TỔNG ====== */
 function mmClass(val){
   const v = Number(String(val ?? "").toString().replace(",", "."));
   if (!isFinite(v)) return "";
@@ -379,12 +385,14 @@ function renderTable(rows){
     thead.innerHTML='<th>(trống)</th>';
     $('#summary').textContent='Không có dữ liệu để hiển thị.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
-    renderChart([]);  
+    renderChart([]);  // dọn chart
+    // hide aggregates area
     $('#aggArea').style.display = 'none';
     $('#btnExportAgg').disabled = true;
     return;
   }
 
+  // Xác định cột thời gian và SẮP XẾP lại cột
   const cols = Object.keys(rows[0]);
   const timeCol =
     cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
@@ -394,18 +402,22 @@ function renderTable(rows){
   const stationCols = cols.filter(c => c !== timeCol);
   const orderedCols = [timeCol, ...stationCols];
 
+  // Header theo đúng thứ tự
   thead.innerHTML = orderedCols.map(c => `<th>${c}</th>`).join('');
 
+  // Body + tính tổng (chỉ cho các cột trạm)
   const totals = Object.fromEntries(stationCols.map(c => [c, 0]));
   const frag = document.createDocumentFragment();
 
   for (const r of rows) {
     const tr = document.createElement('tr');
 
+    // Cột thời gian trước
     const tdTime = document.createElement('td');
     tdTime.textContent = r[timeCol] ?? '';
     tr.appendChild(tdTime);
 
+    // Các cột trạm
     for (const c of stationCols) {
       const raw = r[c];
       const num = Number(String(raw ?? '').toString().replace(',', '.'));
@@ -421,6 +433,7 @@ function renderTable(rows){
   }
   tbody.appendChild(frag);
 
+  // HÀNG TỔNG (mm) đúng vị trí dưới từng cột trạm
   const trow = document.createElement('tr');
   const first = document.createElement('td');
   first.className = 'time';
@@ -436,19 +449,23 @@ function renderTable(rows){
   }
   tfoot.appendChild(trow);
 
+  // Trạng thái + export + chart
   $('#summary').textContent = `Hiển thị ${rows.length} mốc thời gian — ${stationCols.length} trạm.`;
   $('#btnExport').disabled = false;
   $('#btnExportXlsx').disabled = false;
   window.__lastRows = rows;
 
+  // VẼ BIỂU ĐỒ CỘT theo TỔNG từng trạm
   renderChart(rows);
 }
 
-function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='') return row[k]; } }
+/* ===== PIVOT BY TIME ===== */
+function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='' ) return row[k]; } }
 const TIME_KEYS=['thoigian','Thoigian','thoigian_SL','Thoigian_SL','ThoiGian','ThoiGian_SL','time','datetime','date','Ngay','NgayGio','ngaygio'];
 const VALUE_KEYS=['solieu','SoLieu','Solieu','GiaTri','giatri','mucnuoc','MucNuoc','value','LuongMua','luongmua','Mua'];
 const normTime=t=> (t==null?'':String(t).trim().replace('T',' '));
 
+/* ===== DATE LIMITS ===== */
 function pad2(n){return String(n).padStart(2,'0')}
 function toLocalDT(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`}
 function fiveDaysAgoMidnight(){ const n=new Date(); n.setDate(n.getDate()-5); n.setHours(0,0,0,0); return n; }
@@ -471,6 +488,7 @@ function setDateLimits(){
   if (new Date(endEl.value) > now) endEl.value = toLocalDT(now);
 }
 
+/* ===== Parse time robustly (for different formats) ===== */
 function parseTimeString(t){
   if(!t && t!==0) return null;
   if (t instanceof Date) return t;
@@ -492,11 +510,12 @@ function parseTimeString(t){
   return isNaN(d2.getTime())? null : d2;
 }
 
-/* renderChart: trục trái thẳng hàng với dòng thời gian */
+/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
 function renderChart(rows){
   const host = $('#chartInner');
   host.innerHTML = '';
 
+  // Không có dữ liệu
   if (!Array.isArray(rows) || !rows.length){
     const div=document.createElement('div');
     div.style.cssText='font-size:12px;color:#64748b';
@@ -505,6 +524,7 @@ function renderChart(rows){
     return;
   }
 
+  // Xác định cột thời gian & cột trạm
   const cols = Object.keys(rows[0]);
   const timeCol =
     cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
@@ -514,11 +534,12 @@ function renderChart(rows){
   if (!stationCols.length){
     const div=document.createElement('div');
     div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent = 'Không tìm thấy cột trạm để tính tổng.';
+    div.textContent='Không tìm thấy cột trạm để tính tổng.';
     host.appendChild(div);
     return;
   }
 
+  // Tính tổng theo từng trạm
   const totals = stationCols.map(name=>{
     let sum = 0;
     for (const r of rows){
@@ -529,31 +550,13 @@ function renderChart(rows){
   });
 
   const title = document.createElement('div');
-  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:6px;font-weight:800';
+  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
-  const startVal = $('#startDt') ? $('#startDt').value : '';
-  const endVal = $('#endDt') ? $('#endDt').value : '';
-  let rangeText = '';
-  if(startVal && endVal){
-    rangeText = `Thời gian tính từ ${formatVNDatetime(startVal)} đến ${formatVNDatetime(endVal)}.`;
-  } else if(startVal){
-    rangeText = `Thời gian tính từ ${formatVNDatetime(startVal)} đến hiện tại.`;
-  }
-  if(rangeText){
-    const rng = document.createElement('div');
-    rng.className = 'range-text';
-    rng.textContent = rangeText;
-    host.appendChild(rng);
-  }
-
-  const axisX = 0;
-  const extraRightForYAxisLabels = 6;
-  const m = { l: 44, r:16, t:12, b:90 }; // tăng m.l để tránh che nhãn Y
-
   const W =  Math.max(600, host.clientWidth || 800);
   const H = 260;
+  const m = { l:50, r:16, t:12, b:90 };
   const innerW = W - m.l - m.r;
   const innerH = H - m.t - m.b;
 
@@ -565,22 +568,19 @@ function renderChart(rows){
   const barW = Math.max(12, Math.min(48, slot * 0.7));
   const x = i => m.l + i*slot + (slot - barW)/2;
 
-  const container = document.createElement('div');
-  container.className = 'chart-container';
-  host.appendChild(container);
-
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('width','100%');
   svg.setAttribute('height', H);
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  container.appendChild(svg);
+  host.appendChild(svg);
 
+  // Lưới + ticks Y
   const ticks = 5;
   for (let i=0;i<=ticks;i++){
     const v = (maxY / ticks) * i;
     const yy = y(v);
     const line = document.createElementNS(svg.namespaceURI,'line');
-    line.setAttribute('x1', axisX);
+    line.setAttribute('x1', m.l);
     line.setAttribute('y1', yy);
     line.setAttribute('x2', W - m.r);
     line.setAttribute('y2', yy);
@@ -589,15 +589,16 @@ function renderChart(rows){
     svg.appendChild(line);
 
     const t = document.createElementNS(svg.namespaceURI,'text');
-    t.setAttribute('x', axisX + extraRightForYAxisLabels);
+    t.setAttribute('x', m.l - 6);
     t.setAttribute('y', yy + 4);
-    t.setAttribute('text-anchor','start');
+    t.setAttribute('text-anchor','end');
     t.setAttribute('font-size','11');
     t.setAttribute('fill','#334155');
     t.textContent = v.toFixed(1);
     svg.appendChild(t);
   }
 
+  // Cột + nhãn
   totals.forEach((d, i) => {
     const xx = x(i);
     const yy = y(d.total);
@@ -622,6 +623,7 @@ function renderChart(rows){
     label.textContent = d.total.toFixed(1);
     svg.appendChild(label);
 
+    // Nhãn tên trạm (xoay -55°)
     const baseY = m.t + innerH + 48;
     const tx = document.createElementNS(svg.namespaceURI,'text');
     tx.setAttribute('x', xx + barW/2);
@@ -634,8 +636,9 @@ function renderChart(rows){
     svg.appendChild(tx);
   });
 
+  // Trục X (đáy)
   const axis = document.createElementNS(svg.namespaceURI,'line');
-  axis.setAttribute('x1', axisX);
+  axis.setAttribute('x1', m.l);
   axis.setAttribute('y1', m.t + innerH);
   axis.setAttribute('x2', W - m.r);
   axis.setAttribute('y2', m.t + innerH);
@@ -643,7 +646,229 @@ function renderChart(rows){
   svg.appendChild(axis);
 }
 
+/* ===== AGGREGATES: sliding windows + fixed 6h blocks ===== */
+
+/* build per-station time series from pivot rows
+   returns { stationName: [{t:Date, v:Number}, ...], ... } */
+function buildSeriesFromRows(rows){
+  if(!rows?.length) return {};
+  const cols = Object.keys(rows[0]);
+  const timeCol =
+    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
+    cols.find(c => /time|date|ngay/i.test(c)) ||
+    cols[0];
+  const stationCols = cols.filter(c => c !== timeCol);
+  const series = {};
+  for(const name of stationCols) series[name] = [];
+  for(const r of rows){
+    const tRaw = r[timeCol];
+    const t = parseTimeString(tRaw);
+    if(!t) continue;
+    for(const name of stationCols){
+      const v = safeNum(r[name]);
+      if (!isFinite(v)) continue;
+      series[name].push({ t, v });
+    }
+  }
+  // sort each series
+  for(const k of Object.keys(series)){
+    series[k].sort((a,b)=>a.t - b.t);
+  }
+  return series;
+}
+
+/* sliding window sums using two-pointer (ascending times) */
+function slidingWindowSums(series, windowMinutes){
+  const n = series.length;
+  const sums = new Array(n).fill(0);
+  if(n===0) return sums;
+  const windowMs = windowMinutes * 60 * 1000;
+  let left = 0;
+  let curSum = 0;
+  for(let right=0; right<n; right++){
+    curSum += series[right].v;
+    while(left <= right && (series[right].t - series[left].t) >= windowMs){
+      curSum -= series[left].v;
+      left++;
+    }
+    sums[right] = curSum;
+  }
+  return sums;
+}
+
+/* latest-window sum ending at endTime (useful for "Tổng 3h/6h gần nhất") */
+function latestWindowSum(series, endTime, windowMinutes){
+  if(!series || !series.length) return 0;
+  const windowMs = windowMinutes * 60 * 1000;
+  const startMs = endTime.getTime() - windowMs;
+  let sum = 0;
+  for(let i=series.length-1;i>=0;i--){
+    const t = series[i].t.getTime();
+    if (t > endTime.getTime()) continue;
+    if (t <= startMs) break;
+    sum += series[i].v;
+  }
+  return Number(sum.toFixed(1));
+}
+
+/* compute station aggregates (total, max sliding 1h/3h/6h, latest 3h/6h) */
+function computeStationAggregates(series, endTime){
+  const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
+  const max1h = (slidingWindowSums(series,60).length ? Math.max(...slidingWindowSums(series,60)) : 0);
+  const max3h = (slidingWindowSums(series,180).length ? Math.max(...slidingWindowSums(series,180)) : 0);
+  const max6h = (slidingWindowSums(series,360).length ? Math.max(...slidingWindowSums(series,360)) : 0);
+  const latest3h = latestWindowSum(series, endTime, 180);
+  const latest6h = latestWindowSum(series, endTime, 360);
+  return {
+    total: Number(total.toFixed(1)),
+    max1h: Number(max1h.toFixed(1)),
+    max3h: Number(max3h.toFixed(1)),
+    max6h: Number(max6h.toFixed(1)),
+    latest3h,
+    latest6h
+  };
+}
+
+/* compute fixed non-overlapping windows sums (windowMinutes), starting at startTime, until endTime */
+function computeFixedWindowSums(series, windowMinutes, startTime, endTime){
+  const results = [];
+  if(!startTime || !endTime) return results;
+  const windowMs = windowMinutes * 60 * 1000;
+  if(!Array.isArray(series)) series = [];
+  series.sort((a,b)=>a.t - b.t);
+  let curStart = new Date(startTime.getTime());
+  while (curStart.getTime() < endTime.getTime()) {
+    const curEnd = new Date(Math.min(curStart.getTime() + windowMs, endTime.getTime()));
+    let sum = 0;
+    for (let i=0;i<series.length;i++){
+      const tt = series[i].t.getTime();
+      if (tt >= curStart.getTime() && tt < curEnd.getTime()) sum += series[i].v;
+      if (tt >= curEnd.getTime()) break;
+    }
+    results.push({ start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1)) });
+    curStart = new Date(curStart.getTime() + windowMs);
+  }
+  return results;
+}
+
+/* Render aggregates summary (as a simple table) into aggSummaryHolder */
+function renderAggregatesTable(aggregates){
+  const holder = $('#aggSummaryHolder');
+  if(!aggregates || !Object.keys(aggregates).length){
+    holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu tổng hợp.</div>';
+    $('#btnExportAgg').disabled = true;
+    return;
+  }
+  const rows = Object.keys(aggregates).map(name=>{
+    const a = aggregates[name];
+    return {
+      'Trạm': name,
+      'Tổng (mm)': a.total,
+      'Max 1h': a.max1h,
+      'Max 3h': a.max3h,
+      'Max 6h': a.max6h,
+      'Tổng 3h (gần nhất)': a.latest3h,
+      'Tổng 6h (gần nhất)': a.latest6h
+    };
+  });
+
+  // build html
+  let html = '<table class="agg-table"><thead><tr>';
+  html += '<th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th><th>Tổng 3h (gần nhất)</th><th>Tổng 6h (gần nhất)</th>';
+  html += '</tr></thead><tbody>';
+  for(const r of rows){
+    html += `<tr><td>${r['Trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h']}</td><td>${r['Max 3h']}</td><td>${r['Max 6h']}</td><td>${r['Tổng 3h (gần nhất)']}</td><td>${r['Tổng 6h (gần nhất)']}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  holder.innerHTML = html;
+
+  // save for export as CSV
+  window.__lastAgg = rows.map(r => ({ trạm: r['Trạm'], tong_mm: r['Tổng (mm)'], max1h: r['Max 1h'], max3h: r['Max 3h'], max6h: r['Max 6h'], tong3h_latest: r['Tổng 3h (gần nhất)'], tong6h_latest: r['Tổng 6h (gần nhất)'] }));
+  $('#btnExportAgg').disabled = !(window.__lastAgg && window.__lastAgg.length);
+}
+
+/* Render 6h matrix (table) into matrixHolder */
+function render6hMatrix(seriesMap, startTime, endTime){
+  const holder = $('#matrixHolder');
+  holder.innerHTML = '';
+  if(!seriesMap || !Object.keys(seriesMap).length){ holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu 6h.</div>'; return; }
+
+  // build windows
+  const winMs = 6*60*60*1000;
+  const windows = [];
+  let cur = new Date(startTime.getTime());
+  while(cur.getTime() < endTime.getTime()){
+    const nxt = new Date(Math.min(cur.getTime() + winMs, endTime.getTime()));
+    windows.push({ start: new Date(cur), end: new Date(nxt) });
+    cur = new Date(cur.getTime() + winMs);
+  }
+
+  // build table
+  const table = document.createElement('table');
+  table.className = 'rain-table agg-table';
+  const thead = document.createElement('thead');
+  const headRow = document.createElement('tr');
+  headRow.appendChild(document.createElement('th')).textContent = 'Tên trạm';
+  for(const w of windows){
+    const dt = w.start;
+    const label = `${pad(dt.getHours())}h Ngày ${pad(dt.getDate())}/${pad(dt.getMonth()+1)}`;
+    const th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
+  }
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement('tbody');
+  for(const name of Object.keys(seriesMap)){
+    const row = document.createElement('tr');
+    const tdName = document.createElement('td'); tdName.className='time'; tdName.textContent = name; row.appendChild(tdName);
+    const series = seriesMap[name] || [];
+    for(const w of windows){
+      let sum = 0;
+      for(let i=0;i<series.length;i++){
+        const tt = series[i].t.getTime();
+        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
+        if(tt >= w.end.getTime()) break;
+      }
+      const td = document.createElement('td'); td.textContent = sum ? sum.toFixed(1) : '0.0'; row.appendChild(td);
+    }
+    tbody.appendChild(row);
+  }
+  table.appendChild(tbody);
+  holder.appendChild(table);
+
+  // prepare CSV rows: wide form (trạm + columns)
+  const csvRows = [];
+  for(const name of Object.keys(seriesMap)){
+    const series = seriesMap[name] || [];
+    const obj = { trạm: name };
+    windows.forEach((w, idx) => {
+      const key = `${pad(w.start.getHours())}h_${pad(w.start.getDate())}_${pad(w.start.getMonth()+1)}`;
+      let sum = 0;
+      for(let i=0;i<series.length;i++){
+        const tt = series[i].t.getTime();
+        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
+        if(tt >= w.end.getTime()) break;
+      }
+      obj[key] = sum ? sum.toFixed(1) : '0.0';
+    });
+    csvRows.push(obj);
+  }
+  window.__last6hMatrix = { windows, rows: csvRows };
+
+  // also create flat blocks for download if needed
+  const flat = [];
+  for(const name of Object.keys(seriesMap)){
+    const blocks = computeFixedWindowSums(seriesMap[name], 360, startTime, endTime);
+    for(const b of blocks){
+      flat.push({ trạm: name, window_start: b.start.toISOString().replace('T',' ').slice(0,19), window_end: b.end.toISOString().replace('T',' ').slice(0,19), sum_mm: b.sum });
+    }
+  }
+  window.__last6hBlocks = flat;
+}
+
+/* ===== MAIN FLOW ===== */
 async function init(){
+  // mặc định: start = 00:00 của 2 ngày trước; end = now
   const now=new Date(), s0=new Date(now); s0.setDate(now.getDate()-2); s0.setHours(0,0,0,0);
   $('#startDt').value=toLocalDT(s0);
   $('#endDt').value=toLocalDT(now);
@@ -670,6 +895,8 @@ async function init(){
     if(!indices.length){ alert('Hãy chọn ít nhất 1 trạm.'); return; }
 
     const tinhtong=$('#tinhtong').checked?1:0;
+
+    // giữ nguyên giờ:phút do người dùng chọn (theo yêu cầu)
     const fmt=(dt)=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
     const sStr=fmt(s), eStr=fmt(e);
 
@@ -677,7 +904,7 @@ async function init(){
     $('#summary').textContent='Đang lấy dữ liệu…';
     await Promise.all(indices.map(async idx=>{
       const r=stations[idx];
-      const ten_table=($('#tenTable').value.trim()||r.Tab||'mucnuoc_oday');
+      const ten_table=($('#tenTable').value.trim()||r.Tab||'mucnuoc_oday'); // tuỳ Excel
       const sophut=Number($('#sophut').value||r.sophut||60)||60;
       const params={ matram:r.matram, ten_table, sophut:String(sophut), tinhtong:String(tinhtong),
                      thoigianbd:quote(sStr), thoigiankt:quote(eStr) };
@@ -692,6 +919,7 @@ async function init(){
       }
     }));
 
+    // pivot theo thời gian
     const timeIndex=new Map();
     const names=Object.keys(datasets);
     for(const n of names){
@@ -707,6 +935,7 @@ async function init(){
       .sort((a,b)=>String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
     renderTable(rows);
 
+    // ---- aggregates ----
     if($('#showAggregates').checked){
       const seriesMap = buildSeriesFromRows(rows);
       const aggs = {};
@@ -714,7 +943,11 @@ async function init(){
         aggs[name] = computeStationAggregates(seriesMap[name], e);
       }
       renderAggregatesTable(aggs);
+
+      // render matrix 6h-blocks (non-overlapping starting from startDt)
       render6hMatrix(seriesMap, s, e);
+
+      // show agg area
       $('#aggArea').style.display = 'block';
     } else {
       $('#aggArea').style.display = 'none';
@@ -732,6 +965,7 @@ async function init(){
     $('#btnExportAgg').disabled = true;
   });
 
+  // Export
   $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
   $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
   $('#btnExportAgg').addEventListener('click', ()=> {
@@ -746,6 +980,5 @@ async function init(){
 window.addEventListener('DOMContentLoaded', init);
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>
