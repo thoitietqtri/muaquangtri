@@ -568,7 +568,7 @@ function renderChart(rows){
     const t1 = new Date(startVal);
     const t2 = new Date(endVal);
     const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    const txt = `....................................................................................Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
+    const txt = `............................................................................................Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
     range = document.createElement('div');
     range.style.cssText='font-size:11px;color:#1e3a8a;font-weight:700;margin-bottom:10px';
     range.textContent = txt;
