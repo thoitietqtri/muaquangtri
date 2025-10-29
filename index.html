@@ -107,9 +107,6 @@
     .agg-table th,.agg-table td{padding:7px 8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
     .agg-table thead th{background:#f8fafc;font-weight:800}
 
-    /* --- Dòng hiển thị khoảng thời gian: xanh nước biển & in đậm --- */
-    .range-text{ color:#1e40af; font-weight:800; margin-bottom:8px; font-size:12px; }
-
     @media (max-width:1100px){
       .shell{grid-template-columns:1fr}
       .toolbar{top:calc(64px + 8px)}
@@ -583,7 +580,7 @@ function renderChart(rows){
   }
   if(rangeText){
     const rng = document.createElement('div');
-    rng.className = 'range-text';
+    rng.style.cssText='font-size:12px;color:#475569;margin-bottom:8px';
     rng.textContent = rangeText;
     host.appendChild(rng);
   }
