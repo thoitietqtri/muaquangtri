@@ -511,6 +511,7 @@ function parseTimeString(t){
 }
 
 /* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
+/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
 function renderChart(rows){
   const host = $('#chartInner');
   host.innerHTML = '';
@@ -549,33 +550,71 @@ function renderChart(rows){
     return { name, total: Number(sum.toFixed(1)) };
   });
 
+  // --- Tiêu đề và dòng thời gian ---
   const title = document.createElement('div');
-  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
+  title.style.cssText='font-size:13px;color:#0f172a;font-weight:800;margin-bottom:6px';
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
-  const W =  Math.max(600, host.clientWidth || 800);
+  // Dòng khoảng thời gian (màu xanh nước biển, đậm hơn)
+  const startVal = $('#startDt').value;
+  const endVal = $('#endDt').value;
+  if (startVal && endVal){
+    const t1 = new Date(startVal);
+    const t2 = new Date(endVal);
+    const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+    const txt = `Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
+    const range = document.createElement('div');
+    range.style.cssText='font-size:14px;color:#1e3a8a;font-weight:900;margin-bottom:10px';
+    range.textContent = txt;
+    host.appendChild(range);
+  }
+
+  // --- Thiết lập khung vẽ SVG ---
+  const W = Math.max(600, host.clientWidth || 800);
   const H = 260;
-  const m = { l:50, r:16, t:12, b:90 };
-  const innerW = W - m.l - m.r;
-  const innerH = H - m.t - m.b;
+  const m = { l: 0, r:16, t:12, b:90 };
 
   const maxY = Math.max(1, ...totals.map(t => t.total));
-  const y = v => m.t + innerH - (v / maxY) * innerH;
+  const ticks = 5;
+  const tickVals = [];
+  for (let i=0;i<=ticks;i++) tickVals.push((maxY / ticks) * i);
 
+  // đo độ rộng nhãn trục Y để tránh bị che
+  const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  tmpSvg.setAttribute('width','0'); tmpSvg.setAttribute('height','0');
+  document.body.appendChild(tmpSvg);
+  let maxLabelW = 0;
+  tickVals.forEach(v=>{
+    const t = document.createElementNS(tmpSvg.namespaceURI,'text');
+    t.setAttribute('font-size','11');
+    t.textContent = v.toFixed(1);
+    tmpSvg.appendChild(t);
+    const bbox = t.getBBox ? t.getBBox() : { width: String(t.textContent).length * 6 };
+    maxLabelW = Math.max(maxLabelW, bbox.width);
+    tmpSvg.removeChild(t);
+  });
+  document.body.removeChild(tmpSvg);
+
+  // Lề trái đủ rộng để không che trục (cộng thêm 14px đệm)
+  m.l = Math.ceil(maxLabelW + 14);
+
+  const innerW = W - m.l - m.r;
+  const innerH = H - m.t - m.b;
+  const y = v => m.t + innerH - (v / maxY) * innerH;
   const n = totals.length;
   const slot = innerW / Math.max(n,1);
   const barW = Math.max(12, Math.min(48, slot * 0.7));
   const x = i => m.l + i*slot + (slot - barW)/2;
 
+  // --- SVG vẽ biểu đồ ---
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   svg.setAttribute('width','100%');
   svg.setAttribute('height', H);
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
   host.appendChild(svg);
 
-  // Lưới + ticks Y
-  const ticks = 5;
+  // Lưới và trục Y
   for (let i=0;i<=ticks;i++){
     const v = (maxY / ticks) * i;
     const yy = y(v);
@@ -598,7 +637,7 @@ function renderChart(rows){
     svg.appendChild(t);
   }
 
-  // Cột + nhãn
+  // Vẽ cột
   totals.forEach((d, i) => {
     const xx = x(i);
     const yy = y(d.total);
@@ -623,7 +662,6 @@ function renderChart(rows){
     label.textContent = d.total.toFixed(1);
     svg.appendChild(label);
 
-    // Nhãn tên trạm (xoay -55°)
     const baseY = m.t + innerH + 48;
     const tx = document.createElementNS(svg.namespaceURI,'text');
     tx.setAttribute('x', xx + barW/2);
@@ -645,6 +683,7 @@ function renderChart(rows){
   axis.setAttribute('stroke', '#cbd5e1');
   svg.appendChild(axis);
 }
+
 
 /* ===== AGGREGATES: sliding windows + fixed 6h blocks ===== */
 
