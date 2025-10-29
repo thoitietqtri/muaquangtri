@@ -249,6 +249,15 @@
 
         <!-- Chart box + agregates (giữ nguyên giao diện, thêm phần tổng hợp trong box này) -->
         <div id="chartBox" class="card" style="min-height:360px; padding:12px;">
+
+          <!-- small adjustment control: can chỉnh margin-left (px) của title/time line -->
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <label style="font-size:12px;color:#475569;margin:0 4px 0 0">Điều chỉnh canh lề (px)</label>
+            <input id="adjustPixels" type="range" min="-100" max="100" value="-12" style="width:220px">
+            <input id="adjustPixelsNumber" type="number" value="-12" style="width:72px;padding:6px;border:1px solid #e2e8f0;border-radius:8px">
+            <button id="resetAdjust" class="btn ghost" style="width:90px;padding:6px">Reset</button>
+          </div>
+
           <div id="chartInner" style="font-size:12px;color:#64748b">
             Chưa có dữ liệu để vẽ đồ thị.
           </div>
@@ -467,7 +476,7 @@ const normTime=t=> (t==null?'':String(t).trim().replace('T',' '));
 
 /* ===== DATE LIMITS ===== */
 function pad2(n){return String(n).padStart(2,'0')}
-function toLocalDT(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`}
+function toLocalDT(d){return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`} 
 function fiveDaysAgoMidnight(){ const n=new Date(); n.setDate(n.getDate()-5); n.setHours(0,0,0,0); return n; }
 function setDateLimits(){
   const now=new Date();
@@ -550,7 +559,9 @@ function renderChart(rows){
   });
 
   /* ========== CONFIG TÙY CHỈNH NHỎ (ANH CÓ THỂ THAY) ========== */
-  const ADJUST_PIXELS = -12;          // <--- thay giá trị này (âm kéo tiêu đề/line sang trái)
+  // ADJUST_PIXELS sẽ được đọc từ control (nếu có), mặc định -12
+  const defaultAdjust = -12;
+  const ADJUST_PIXELS = (typeof window.__ADJUST_PIXELS === 'number') ? window.__ADJUST_PIXELS : defaultAdjust;
   const BAR_LABEL_FONT_SIZE = 9;      // font size cho chữ trên đỉnh cột (số)
   /* ========================================================= */
 
@@ -949,6 +960,36 @@ async function init(){
   setDateLimits();
   $('#startDt').addEventListener('change', setDateLimits);
   $('#endDt').addEventListener('change', setDateLimits);
+
+  // --- Adjustment control: sync range + number + reset ---
+  // lưu giá trị mặc định vào window để renderChart có thể đọc
+  window.__ADJUST_PIXELS = -12;
+
+  const adjRange = document.getElementById('adjustPixels');
+  const adjNum   = document.getElementById('adjustPixelsNumber');
+  const resetBtn = document.getElementById('resetAdjust');
+
+  if (adjRange && adjNum) {
+    adjRange.addEventListener('input', (e) => {
+      const v = Number(e.target.value) || 0;
+      adjNum.value = v;
+      window.__ADJUST_PIXELS = v;
+      // Nếu đã có dữ liệu, vẽ lại chart để thấy hiệu ứng ngay
+      if (window.__lastRows) renderChart(window.__lastRows);
+    });
+    adjNum.addEventListener('change', (e) => {
+      const v = Number(e.target.value) || 0;
+      adjRange.value = v;
+      window.__ADJUST_PIXELS = v;
+      if (window.__lastRows) renderChart(window.__lastRows);
+    });
+    resetBtn.addEventListener('click', () => {
+      window.__ADJUST_PIXELS = -12;
+      adjRange.value = -12;
+      adjNum.value = -12;
+      if (window.__lastRows) renderChart(window.__lastRows);
+    });
+  }
 
   $('#btnAutoXlsx').addEventListener('click', async ()=>{
     try{ await tryAutoLoadExcel(); }catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; }
