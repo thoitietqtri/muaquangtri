@@ -72,7 +72,7 @@
     .summary{font-size:13px; color:#1f2937}
     .toolbar-actions{display:flex; gap:8px}
 
-    /* ===== RESULTS GRID (table left + chart right) ===== */
+    /* ===== RESULTS GRID (table left + chart right) ====== */
     .results-grid{
       display:grid;
       grid-template-columns:minmax(440px,48%) 1fr;
@@ -281,6 +281,21 @@ const quote = s => `'${s}'`;
 function buildProxyUrl(p){ return `${API_PROXY}?` + new URLSearchParams(p).toString(); }
 
 function safeNum(v){ const n=Number(String(v??'').toString().replace(',','.')); return isFinite(n)?n:NaN; }
+
+/* --- BỔ SUNG: format VN datetime cho hiển thị --- */
+function formatVNDatetime(input){
+  if(!input) return '';
+  let d = null;
+  if(input instanceof Date) d = input;
+  else d = parseTimeString(input) || parseTimeString(input.replace('T',' '));
+  if(!d) return String(input);
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  const DD = pad(d.getDate());
+  const MM = pad(d.getMonth()+1);
+  const YYYY = d.getFullYear();
+  return `${hh}h${mm} ngày ${DD}/${MM}/${YYYY}`;
+}
 
 /* CSV/XLSX Export */
 function toCSV(rows){
@@ -550,9 +565,26 @@ function renderChart(rows){
   });
 
   const title = document.createElement('div');
-  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
+  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:6px;font-weight:800';
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
+
+  // --- DÒNG HIỂN THỊ KHOẢNG THỜI GIAN (BỔ SUNG) ---
+  const startVal = $('#startDt') ? $('#startDt').value : '';
+  const endVal = $('#endDt') ? $('#endDt').value : '';
+  let rangeText = '';
+  if(startVal && endVal){
+    rangeText = `Thời gian tính từ ${formatVNDatetime(startVal)} đến ${formatVNDatetime(endVal)}.`;
+  } else if(startVal){
+    rangeText = `Thời gian tính từ ${formatVNDatetime(startVal)} đến hiện tại.`;
+  }
+  if(rangeText){
+    const rng = document.createElement('div');
+    rng.style.cssText='font-size:12px;color:#475569;margin-bottom:8px';
+    rng.textContent = rangeText;
+    host.appendChild(rng);
+  }
+  // --- end range ---
 
   const W =  Math.max(600, host.clientWidth || 800);
   const H = 260;
