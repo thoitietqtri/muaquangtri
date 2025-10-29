@@ -3,9 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</title>
-
-  <!-- ====== Base UI ====== -->
+  <title>THÔNG TIN MỰC NƯỚC CÁC TRẠM THỦY VĂN — QUẢNG TRỊ</title>
   <style>
     :root{
       --bg:#f6f8ff; --card:#fff; --txt:#0f172a; --muted:#64748b; --pri:#1d4ed8;
@@ -102,10 +100,28 @@
       padding-right:36px; position:relative; z-index:31;
     }
 
-    /* ===== AGGREGATE table inside chartBox (kept minimal, reuse rain-table look) ===== */
-    .agg-table{width:100%;border-collapse:collapse;margin-top:8px}
-    .agg-table th,.agg-table td{padding:7px 8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
-    .agg-table thead th{background:#f8fafc;font-weight:800}
+    /* ===== ALERT TABLE (STATIC) ===== */
+    .alert-box{border:2px solid #ef4444; border-radius:12px; padding:10px}
+    .alert-scroll{max-height:270px; overflow:auto; border:1px solid #fecaca; border-radius:10px; background:#fff}
+    .alert-table{width:100%; border-collapse:separate; border-spacing:0; font-size:12px}
+    .alert-table th,.alert-table td{
+      padding:6px 8px; text-align:center; vertical-align:middle;
+      border-right:1px solid #fecaca; border-bottom:1px solid #fecaca
+    }
+    .alert-table th:first-child,.alert-table td:first-child{border-left:1px solid #fecaca}
+    .alert-table thead th{position:sticky; top:0; background:#fff5f5; z-index:1}
+    .alert-table tbody td{color:#dc2626; font-weight:700}
+    .name-left{text-align:left}
+
+    /* ===== DETAIL SUMMARY (ADDED) ===== */
+    .detail-table{border-collapse:separate; border-spacing:0; font-size:12px; min-width:900px}
+    .detail-table thead th, .detail-table tbody td{padding:6px 10px; border-right:1px solid var(--grid-strong); border-bottom:1px solid var(--grid-strong); text-align:center}
+    .detail-table tbody td.station{position:sticky; left:0; background:#fff; text-align:left; font-weight:700; z-index:3; min-width:180px}
+    .badge{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700}
+    .ok{background:#d1fae5;color:#065f46}
+    .warn{background:#fef3c7;color:#92400e}
+    .danger{background:#fee2e2;color:#7f1d1d}
+    .muted{color:var(--muted);font-size:12px}
 
     @media (max-width:1100px){
       .shell{grid-template-columns:1fr}
@@ -113,41 +129,12 @@
       .results-grid{grid-template-columns:1fr}
     }
   </style>
-
-  <!-- ====== Styles riêng cho app mưa (bảng + chart) ====== -->
-  <style>
-  body{margin:0;background:#f1f5f9;font-family:Inter,system-ui,Avenir,Helvetica,Arial,sans-serif}
-  .container{max-width:1280px;margin:18px auto;padding:12px}
-  .header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
-  .header h2{margin:0;font-size:20px;font-weight:800;color:#0f172a}
-  .header .total{font-weight:900;color:#c1121f}
-  .toolbar{display:grid;grid-template-columns:200px 200px 220px 140px 1fr;gap:10px;align-items:end;margin-bottom:10px}
-  .toolbar label{font-size:12px;color:#475569;display:block;margin-bottom:4px}
-  .toolbar input,.toolbar select,.toolbar button{width:100%;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;background:#fff}
-  .toolbar button{cursor:pointer;font-weight:700;border:none;background:#2563eb;color:#fff}
-  .toolbar button:disabled{opacity:.6;cursor:not-allowed}
-  .layout{display:grid;grid-template-columns:1fr 420px;gap:12px;align-items:start}
-  .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;box-shadow:0 6px 18px rgba(0,0,0,.04)}
-  .card h3{margin:6px 0 10px;font-size:16px;font-weight:800;color:#0f172a}
-  .right-pane{position:sticky;top:12px}
-  .table-wrapper{width:100%;overflow:auto;border-radius:8px}
-  .rain-table{border-collapse:separate;border-spacing:0;width:100%;min-width:760px}
-  .rain-table th,.rain-table td{border-bottom:1px solid #eef2f6;padding:7px 8px;text-align:center;white-space:nowrap;font-size:13px}
-  .rain-table thead th{position:sticky;top:0;background:#f8fafc;z-index:1}
-  .rain-table tbody td.time,.rain-table tfoot td.time{text-align:left;font-weight:700;color:#0f172a;position:sticky;left:0;background:#fff}
-  .rain-table tbody tr:nth-child(odd) td{background:#fcfcfd}
-  .rain-table tfoot td{font-weight:900;color:#c1121f;background:#fff5f5}
-  .mm-black{color:#111827;font-weight:700}.mm-green{color:#16a34a;font-weight:800}.mm-purple{color:#7c3aed;font-weight:800}.mm-red{color:#dc2626;font-weight:900}
-  @media (max-width:1100px){.layout{grid-template-columns:1fr}.right-pane{position:static}}
-  </style>
-
-  <!-- XLSX reader -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 <header>
   <h1 class="title">
-    <div class="l1">LƯỢNG MƯA CÁC TRẠM TỰ ĐỘNG TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</div>
+    <div class="l1">THÔNG TIN MỰC NƯỚC CÁC TRẠM THỦY VĂN TRÊN ĐỊA BÀN TỈNH QUẢNG TRỊ</div>
     <div class="l2">Phục vụ công tác phòng chống thiên tai</div>
   </h1>
 </header>
@@ -202,7 +189,7 @@
         </div>
       </div>
 
-      <label style="margin-top:8px"><input type="checkbox" id="tinhtong" checked> Tính tổng theo ngày (tinhtong=1)</label>
+      <label style="margin-top:8px"><input type="checkbox" id="tinhtong"> Tính tổng theo ngày (tinhtong=1)</label>
     </div>
 
     <!-- Thao tác -->
@@ -214,16 +201,41 @@
       </div>
     </div>
 
-    <!-- Thêm cấu phần tuỳ chọn tổng hợp (nhỏ, không thay đổi giao diện) -->
-    <div class="section">
-      <h3 class="section-title">Tùy chọn tổng hợp <span class="tag">Aggregates</span></h3>
-      <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="showAggregates" checked> Hiển thị bảng tổng hợp (1h/3h/6h & 6h-blocks)</label>
-      <div class="status" style="color:var(--muted); font-size:12px">Bảng sẽ tính Max sliding-window trong khoảng thời gian đang chọn; 6h-blocks là các khung 6h không chồng chéo bắt đầu từ startDt.</div>
-      <div style="margin-top:8px">
-        <button id="btnExportAgg" class="btn ghost" disabled>Tải CSV tổng hợp</button>
+    <!-- Bảng báo động (cố định) -->
+    <div class="section alert-box">
+      <h3 class="section-title" style="margin-bottom:6px">Mực nước ứng với cấp báo động (m)</h3>
+      <div class="alert-scroll">
+        <table class="alert-table">
+          <thead>
+            <tr><th style="width:42px">TT</th><th>Tên sông</th><th>Tên trạm</th><th>I</th><th>II</th><th>III</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>1</td><td class="name-left">Gianh</td><td class="name-left">Mai Hóa</td><td>3.0</td><td>5.0</td><td>6.5</td></tr>
+            <tr><td>2</td><td class="name-left">Gianh</td><td class="name-left">Đồng Tâm</td><td>7.0</td><td>13.0</td><td>16.0</td></tr>
+            <tr><td>3</td><td class="name-left">Gianh</td><td class="name-left">Tân Mỹ</td><td>1.1</td><td>1.3</td><td>1.5</td></tr>
+            <tr><td>4</td><td class="name-left">Kiến Giang</td><td class="name-left">Lệ Thủy</td><td>1.2</td><td>2.2</td><td>2.7</td></tr>
+            <tr><td>5</td><td class="name-left">Kiến Giang</td><td class="name-left">Kiến Giang</td><td>8.0</td><td>11.0</td><td>13.0</td></tr>
+            <tr><td>6</td><td class="name-left">Nhật Lệ</td><td class="name-left">Đồng Hới</td><td>1.0</td><td>1.5</td><td>2.0</td></tr>
+            <tr><td>7</td><td class="name-left">Hiếu</td><td class="name-left">Đông Hà</td><td>2.0</td><td>3.0</td><td>4.0</td></tr>
+            <tr><td>8</td><td class="name-left">Thạch Hãn</td><td class="name-left">Thạch Hãn</td><td>3.0</td><td>4.5</td><td>6.0</td></tr>
+            <tr><td>9</td><td class="name-left">Cửa Việt</td><td class="name-left">Cửa Việt</td><td>1.0</td><td>1.5</td><td>2.0</td></tr>
+            <tr><td>10</td><td class="name-left">Bến Hải</td><td class="name-left">Gia Vòng</td><td>5.0</td><td>8.0</td><td>11.0</td></tr>
+            <tr><td>11</td><td class="name-left">Bến Hải</td><td class="name-left">Hiền Lương</td><td>1.0</td><td>2.0</td><td>2.5</td></tr>
+            <tr><td>12</td><td class="name-left">Roon</td><td class="name-left">Quảng Phú</td><td>1.3</td><td>2.1</td><td>2.7</td></tr>
+            <tr><td>13</td><td class="name-left">Gianh</td><td class="name-left">Quảng Thanh</td><td>1.2</td><td>2.1</td><td>2.7</td></tr>
+            <tr><td>14</td><td class="name-left">Rào Nan</td><td class="name-left">Cao Quảng</td><td>28.5</td><td>31.0</td><td>33.0</td></tr>
+            <tr><td>15</td><td class="name-left">Son</td><td class="name-left">Phong Nha</td><td>3.5</td><td>5.0</td><td>6.5</td></tr>
+            <tr><td>16</td><td class="name-left">Lý Hòa</td><td class="name-left">Lý Hòa</td><td>1.1</td><td>2.0</td><td>2.5</td></tr>
+            <tr><td>17</td><td class="name-left">Nhật Lệ</td><td class="name-left">Hàm Ninh</td><td>1.2</td><td>2.0</td><td>3.0</td></tr>
+            <tr><td>18</td><td class="name-left">Đakrông</td><td class="name-left">Đakrông</td><td>29.5</td><td>31.5</td><td>33.5</td></tr>
+            <tr><td>19</td><td class="name-left">Hiếu</td><td class="name-left">Đầu Mầu</td><td>21.0</td><td>22.5</td><td>23.5</td></tr>
+            <tr><td>20</td><td class="name-left">SaLung</td><td class="name-left">Bến Quan</td><td>4.0</td><td>5.5</td><td>6.5</td></tr>
+            <tr><td>21</td><td class="name-left">Ô Lâu</td><td class="name-left">Mỹ Chánh</td><td>2.5</td><td>4.0</td><td>5.3</td></tr>
+            <tr><td>22</td><td class="name-left">Ô Lâu</td><td class="name-left">Hải Tân</td><td>1.8</td><td>2.8</td><td>3.4</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
-
   </aside>
 
   <!-- ===== MAIN ===== -->
@@ -240,29 +252,46 @@
     <div class="card" style="padding:12px">
       <div class="results-grid">
         <div class="scroll" id="tableBox" style="padding:0">
-          <table id="dataTable" class="rain-table">
+          <table>
             <thead><tr id="thead"></tr></thead>
             <tbody id="tbody"></tbody>
-            <tfoot id="tfoot"></tfoot>
           </table>
         </div>
 
-        <!-- Chart box + agregates (giữ nguyên giao diện, thêm phần tổng hợp trong box này) -->
-        <div id="chartBox" class="card" style="min-height:360px; padding:12px;">
-          <div id="chartInner" style="font-size:12px;color:#64748b">
+        <!-- Chart box -->
+        <div id="chartBox" class="card" style="min-height:360px">
+          <div style="font-size:12px;color:#64748b">
             Chưa có dữ liệu để vẽ đồ thị.
-          </div>
-
-          <!-- AGGREGATES AREA: hiển thị bảng tổng hợp  và 6h-blocks -->
-          <div id="aggArea" style="margin-top:12px; display:none">
-            <div style="margin-bottom:8px; font-weight:800; color:#0f172a">BẢNG MƯA LỚN NHẤT THEO TỪNG THỜI ĐOẠN</div>
-            <div id="aggSummaryHolder"></div>
-
-            <div style="margin-top:12px; font-weight:800; color:#0f172a">BẢNG TỔNG LƯỢNG MƯA THEO THỜI ĐOẠN 6 GIỜ</div>
-            <div id="matrixHolder" style="margin-top:6px; overflow:auto"></div>
           </div>
         </div>
       </div>
+
+      <!-- ===== ADDED: BẢNG TỔNG HỢP (GIỐNG ẢNH) =====
+           - Giữ nguyên giao diện cũ, chèn bảng ngay dưới vùng results-grid
+           - Bảng được sinh từ window.__LAST_DATASETS (được tạo khi bấm Lấy dữ liệu)
+      -->
+      <div style="margin-top:12px">
+        <div style="font-weight:800; margin-bottom:6px">BẢNG TỔNG HỢP CHI TIẾT (như mẫu)</div>
+        <div class="scroll" style="border-radius:10px; padding:8px; background:#fff">
+          <table class="detail-table" id="detailTable">
+            <thead id="detailHead">
+              <tr>
+                <th>Trạm thủy văn</th>
+                <th>I</th>
+                <th>II</th>
+                <th>III</th>
+                <!-- dynamic recent time columns will be injected here by JS -->
+                <th>SSB1</th>
+                <th>SSB2</th>
+                <th>SSB3</th>
+                <th>Hiện trạng</th>
+              </tr>
+            </thead>
+            <tbody id="detailBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- ===== END ADDED ===== -->
     </div>
   </main>
 </div>
@@ -280,8 +309,6 @@ const toLocalDatetimeValue = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${p
 const quote = s => `'${s}'`;
 function buildProxyUrl(p){ return `${API_PROXY}?` + new URLSearchParams(p).toString(); }
 
-function safeNum(v){ const n=Number(String(v??'').toString().replace(',','.')); return isFinite(n)?n:NaN; }
-
 /* CSV/XLSX Export */
 function toCSV(rows){
   if(!rows?.length) return "";
@@ -291,13 +318,13 @@ function toCSV(rows){
   const body = rows.map(r => cols.map(c => esc(r[c])).join(",")).join("\n");
   return head+"\n"+body;
 }
-function downloadCSV(rows, filename='rain_ketqua.csv'){
+function downloadCSV(rows){
   const csv = toCSV(rows);
   const bom = '\uFEFF';
   const blob = new Blob([bom, csv], {type: 'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = filename;
+  a.href = url; a.download = 'mucnuoc_ketqua.csv';
   document.body.appendChild(a); a.click(); a.remove();
   URL.revokeObjectURL(url);
 }
@@ -306,7 +333,7 @@ function downloadXLSX(rows){
   const wb = XLSX.utils.book_new();
   const ws = XLSX.utils.json_to_sheet(rows);
   XLSX.utils.book_append_sheet(wb, ws, 'DuLieu');
-  XLSX.writeFile(wb, 'rain_ketqua.xlsx');
+  XLSX.writeFile(wb, 'mucnuoc_ketqua.xlsx');
 }
 
 /* Fetch JSON (fallback AllOrigins nếu CORS lỗi) */
@@ -364,98 +391,33 @@ function fillStationSelects(){
     o.value=i; o.textContent=(r.tentram||'(không tên)').trim();
     box.appendChild(o);
   });
+  // default: select first 4 originally, but user asked to keep original default.
+  // Keep original behavior: select 4 first by default (as original code said).
 for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
 }
-
-/* ====== MÀU THEO NGƯỠNG + HÀNG TỔNG ====== */
-function mmClass(val){
-  const v = Number(String(val ?? "").toString().replace(",", "."));
-  if (!isFinite(v)) return "";
-  if (v < 10) return "mm-black";
-  if (v <= 25) return "mm-green";
-  if (v <= 50) return "mm-purple";
-  return "mm-red";
-}
-
 function renderTable(rows){
-  const thead=$('#thead'), tbody=$('#tbody'), tfoot=$('#tfoot');
-  thead.innerHTML=''; tbody.innerHTML=''; tfoot.innerHTML='';
-
+  const thead=$('#thead'), tbody=$('#tbody'); thead.innerHTML=''; tbody.innerHTML='';
   if(!Array.isArray(rows)||!rows.length){
     thead.innerHTML='<th>(trống)</th>';
     $('#summary').textContent='Không có dữ liệu để hiển thị.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);  // dọn chart
-    // hide aggregates area
-    $('#aggArea').style.display = 'none';
-    $('#btnExportAgg').disabled = true;
     return;
   }
-
-  // Xác định cột thời gian và SẮP XẾP lại cột
-  const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
-
-  const stationCols = cols.filter(c => c !== timeCol);
-  const orderedCols = [timeCol, ...stationCols];
-
-  // Header theo đúng thứ tự
-  thead.innerHTML = orderedCols.map(c => `<th>${c}</th>`).join('');
-
-  // Body + tính tổng (chỉ cho các cột trạm)
-  const totals = Object.fromEntries(stationCols.map(c => [c, 0]));
-  const frag = document.createDocumentFragment();
-
-  for (const r of rows) {
-    const tr = document.createElement('tr');
-
-    // Cột thời gian trước
-    const tdTime = document.createElement('td');
-    tdTime.textContent = r[timeCol] ?? '';
-    tr.appendChild(tdTime);
-
-    // Các cột trạm
-    for (const c of stationCols) {
-      const raw = r[c];
-      const num = Number(String(raw ?? '').toString().replace(',', '.'));
-      if (isFinite(num)) totals[c] += num;
-
-      const td = document.createElement('td');
-      td.textContent = (raw==='' || raw==null) ? '' : (isFinite(num) ? num.toFixed(1) : raw);
-      td.className = mmClass(num);
-      tr.appendChild(td);
-    }
-
+  const cols=Object.keys(rows[0]);
+  thead.innerHTML=cols.map(c=>`<th>${c}</th>`).join('');
+  const frag=document.createDocumentFragment();
+  for(const r of rows){
+    const tr=document.createElement('tr');
+    tr.innerHTML=cols.map(c=>`<td>${r[c]??''}</td>`).join('');
     frag.appendChild(tr);
   }
   tbody.appendChild(frag);
-
-  // HÀNG TỔNG (mm) đúng vị trí dưới từng cột trạm
-  const trow = document.createElement('tr');
-  const first = document.createElement('td');
-  first.className = 'time';
-  first.innerHTML = '<b>Tổng (mm)</b>';
-  trow.appendChild(first);
-
-  for (const c of stationCols) {
-    const td = document.createElement('td');
-    td.style.fontWeight = '900';
-    td.style.color = '#c1121f';
-    td.textContent = totals[c] ? totals[c].toFixed(1) : '0.0';
-    trow.appendChild(td);
-  }
-  tfoot.appendChild(trow);
-
-  // Trạng thái + export + chart
-  $('#summary').textContent = `Hiển thị ${rows.length} mốc thời gian — ${stationCols.length} trạm.`;
-  $('#btnExport').disabled = false;
-  $('#btnExportXlsx').disabled = false;
+  $('#summary').textContent = `Hiển thị ${rows.length} mốc thời gian — ${cols.length-1} trạm.`;
+  $('#btnExport').disabled=false; $('#btnExportXlsx').disabled=false;
   window.__lastRows = rows;
 
-  // VẼ BIỂU ĐỒ CỘT theo TỔNG từng trạm
+  // VẼ ĐỒ THỊ từ chính rows đang hiển thị
   renderChart(rows);
 }
 
@@ -488,421 +450,318 @@ function setDateLimits(){
   if (new Date(endEl.value) > now) endEl.value = toLocalDT(now);
 }
 
-/* ===== Parse time robustly (for different formats) ===== */
-function parseTimeString(t){
-  if(!t && t!==0) return null;
-  if (t instanceof Date) return t;
-  let s = String(t).trim();
-  if (!s) return null;
-  try {
-    if (s.includes('/') && /^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
-      const [d,m,y, ...rest] = s.replace(',', '').split(/[\/\s:]+/);
-      const timePart = rest.length? (' ' + rest.slice(0,3).map(x=>x.padStart(2,'0')).join(':')): '';
-      s = `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}${timePart}`;
+/* ===== CHART HELPERS: BD1/BD2/BD3 từ bảng cảnh báo ===== */
+function normName(s){
+  return (s??"").toString()
+    .normalize("NFD").replace(/\p{Diacritic}/gu,"")
+    .replace(/\s+/g," ").trim().toLowerCase();
+}
+function initBDLevels(){
+  const map = new Map();
+  const rows = document.querySelectorAll(".alert-table tbody tr");
+  rows.forEach(tr=>{
+    const tds = tr.querySelectorAll("td");
+    const tenTram = tds[2]?.textContent?.trim() ?? ""; // cột tên trạm
+    const bd1 = Number((tds[3]?.textContent ?? "").replace(",", "."));
+    const bd2 = Number((tds[4]?.textContent ?? "").replace(",", "."));
+    const bd3 = Number((tds[5]?.textContent ?? "").replace(",", "."));
+    if(tenTram){
+      map.set(normName(tenTram), {
+        name: tenTram,
+        bd1: Number.isFinite(bd1) ? bd1 : null,
+        bd2: Number.isFinite(bd2) ? bd2 : null,
+        bd3: Number.isFinite(bd3) ? bd3 : null
+      });
     }
-    s = s.replace('T',' ').replace(/\.\d+$/,'');
-    const dtParts = s.split(' ');
-    if (dtParts.length === 2 && dtParts[1].split(':').length === 2) s = s + ':00';
-    const dObj = new Date(s);
-    if (!isNaN(dObj.getTime())) return dObj;
-  } catch(e){ }
-  const d2 = new Date(Date.parse(s));
-  return isNaN(d2.getTime())? null : d2;
+  });
+  window.__BD_MAP = map;
+}
+function findBDFor(stationName){
+  const key = normName(stationName);
+  const map = window.__BD_MAP || new Map();
+  if(map.has(key)) return map.get(key);
+  for(const [k,v] of map.entries()){
+    if(k.includes(key) || key.includes(k)) return v; // khớp gần đúng
+  }
+  return null;
 }
 
-/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
-/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
-function renderChart(rows){
-  const host = $('#chartInner');
-  host.innerHTML = '';
+/* ===== CHART (SVG thuần, robust) ===== */
+function parseTimeMaybe(s){
+  if(s==null) return NaN;
+  const t=String(s).trim(); if(!t) return NaN;
+  if(/^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}(:\d{2})?$/.test(t)) return new Date(t.replace(" ","T")).getTime();
+  let m=t.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if(m){ const[,dd,mm,yy,HH,MM,SS="00"]=m; return new Date(`${yy}-${pad(dd)}-${pad(mm)}T${HH}:${MM}:${SS}`).getTime(); }
+  m=t.match(/^(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/);
+  if(m){ const[,dd,mm,yy,HH,MM,SS="00"]=m; return new Date(`${yy}-${pad(mm)}-${pad(dd)}T${HH}:${MM}:${SS}`).getTime(); }
+  const p=Date.parse(t); return Number.isNaN(p)?NaN:p;
+}
+function toNum(v){ const n=parseFloat(String(v??"").trim().replace(",", ".")); return Number.isFinite(n)?n:NaN; }
 
-  // Không có dữ liệu
-  if (!Array.isArray(rows) || !rows.length){
-    const div=document.createElement('div');
-    div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent='Chưa có dữ liệu để vẽ đồ thị.';
-    host.appendChild(div);
-    return;
+function buildSeriesFromRows(rows){
+  if(!Array.isArray(rows)||!rows.length) return {series:[], xType:"empty", xValues:[], xLabels:[]};
+  const keys=Object.keys(rows[0]);
+  const timeKey = keys.find(k => k.toLowerCase().includes('thoi') && k.toLowerCase().includes('gian'))
+                 || keys.find(k => /time|ngay|date/i.test(k))
+                 || null;
+
+  let xType="time", xValues=[], xLabels=[];
+  if(timeKey){
+    const parsed = rows.map(r=>parseTimeMaybe(r[timeKey]));
+    const ok = parsed.filter(v=>!Number.isNaN(v)).length;
+    if(ok>=2){ xType="time"; xValues=parsed; xLabels=rows.map(r=>String(r[timeKey]??"")); }
+    else { xType="index"; xValues=rows.map((_,i)=>i); xLabels=rows.map((r,i)=>String(r[timeKey]??`#${i+1}`)); }
+  }else{
+    xType="index"; xValues=rows.map((_,i)=>i); xLabels=rows.map((_,i)=>`#${i+1}`);
   }
 
-  // Xác định cột thời gian & cột trạm
-  const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
-  const stationCols = cols.filter(c => c !== timeCol);
-  if (!stationCols.length){
-    const div=document.createElement('div');
-    div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent='Không tìm thấy cột trạm để tính tổng.';
-    host.appendChild(div);
-    return;
-  }
-
-  // Tính tổng theo từng trạm
-  const totals = stationCols.map(name=>{
-    let sum = 0;
-    for (const r of rows){
-      const v = Number(String(r[name] ?? '').toString().replace(',','.'));
-      if (isFinite(v)) sum += v;
+  const series=[];
+  for(const k of keys){
+    if(k===timeKey) continue;
+    const pts=[];
+    for(let i=0;i<rows.length;i++){
+      const y=toNum(rows[i][k]); const x=xValues[i];
+      if(!Number.isNaN(x)&&Number.isFinite(y)) pts.push({x,y});
     }
-    return { name, total: Number(sum.toFixed(1)) };
-  });
+    if(pts.length>=2){ pts.sort((a,b)=>a.x-b.x); series.push({name:k, data:pts}); }
+  }
+  return {series, xType, xValues, xLabels};
+}
 
-  // --- Tiêu đề và dòng thời gian ---
+function renderChart(rows){
+  const host = $('#chartBox');
+  host.innerHTML = '';
   const title = document.createElement('div');
-  title.style.cssText='font-size:13px;color:#0f172a;font-weight:800;margin-bottom:6px';
-  title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
+  title.style.cssText='font-size:12px;color:#64748b;margin-bottom:8px';
+  title.textContent='Đồ thị quá trình mực nước — dữ liệu từ bảng đang hiển thị.';
   host.appendChild(title);
 
-  // Dòng khoảng thời gian (màu xanh nước biển, đậm hơn)
-  const startVal = $('#startDt').value;
-  const endVal = $('#endDt').value;
-  if (startVal && endVal){
-    const t1 = new Date(startVal);
-    const t2 = new Date(endVal);
-    const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    const txt = `Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
-    const range = document.createElement('div');
-    range.style.cssText='font-size:11px;color:#1e3a8a;font-weight:600;margin-bottom:10px';
-    range.textContent = txt;
-    host.appendChild(range);
+  const {series, xType, xValues, xLabels} = buildSeriesFromRows(rows);
+  if(!series.length){
+    const div=document.createElement('div'); div.style.cssText='font-size:12px;color:#64748b';
+    div.textContent='Không đủ dữ liệu số để vẽ đồ thị.';
+    host.appendChild(div); return;
   }
 
-  // --- Thiết lập khung vẽ SVG ---
-  const W = Math.max(600, host.clientWidth || 800);
-  const H = 260;
-  const m = { l: 0, r:16, t:12, b:90 };
+  const bar=document.createElement('div');
+  bar.style.cssText='display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px';
+  host.appendChild(bar);
 
-  const maxY = Math.max(1, ...totals.map(t => t.total));
-  const ticks = 5;
-  const tickVals = [];
-  for (let i=0;i<=ticks;i++) tickVals.push((maxY / ticks) * i);
+  let selected=series[0].name;
 
-  // đo độ rộng nhãn trục Y để tránh bị che
-  const tmpSvg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-  tmpSvg.setAttribute('width','0'); tmpSvg.setAttribute('height','0');
-  document.body.appendChild(tmpSvg);
-  let maxLabelW = 0;
-  tickVals.forEach(v=>{
-    const t = document.createElementNS(tmpSvg.namespaceURI,'text');
-    t.setAttribute('font-size','11');
-    t.textContent = v.toFixed(1);
-    tmpSvg.appendChild(t);
-    const bbox = t.getBBox ? t.getBBox() : { width: String(t.textContent).length * 6 };
-    maxLabelW = Math.max(maxLabelW, bbox.width);
-    tmpSvg.removeChild(t);
-  });
-  document.body.removeChild(tmpSvg);
+  function draw(){
+    const old=host.querySelector('svg'); if(old) old.remove();
+    const sel=series.find(s=>s.name===selected) || series[0];
+    const data=sel.data;
 
-  // Lề trái đủ rộng để không che trục (cộng thêm 14px đệm)
-  m.l = Math.ceil(maxLabelW + 14);
+    const W=host.clientWidth||800, H=330, m={l:48,r:16,t:12,b:28};
+    const minX=Math.min(...data.map(d=>d.x)), maxX=Math.max(...data.map(d=>d.x));
+    let minY=Math.min(...data.map(d=>d.y)), maxY=Math.max(...data.map(d=>d.y));
+    if(minY===maxY) maxY=minY+1e-6;
 
-  const innerW = W - m.l - m.r;
-  const innerH = H - m.t - m.b;
-  const y = v => m.t + innerH - (v / maxY) * innerH;
-  const n = totals.length;
-  const slot = innerW / Math.max(n,1);
-  const barW = Math.max(12, Math.min(48, slot * 0.7));
-  const x = i => m.l + i*slot + (slot - barW)/2;
+    const sx=x=> m.l + ((x-minX)/(maxX-minX||1))*(W-m.l-m.r);
+    const sy=y=> H-m.b - ((y-minY)/(maxY-minY||1))*(H-m.t-m.b);
 
-  // --- SVG vẽ biểu đồ ---
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('width','100%');
-  svg.setAttribute('height', H);
-  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
-  host.appendChild(svg);
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('width','100%'); svg.setAttribute('height',H);
+    svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+    host.appendChild(svg);
 
-  // Lưới và trục Y
-  for (let i=0;i<=ticks;i++){
-    const v = (maxY / ticks) * i;
-    const yy = y(v);
-    const line = document.createElementNS(svg.namespaceURI,'line');
-    line.setAttribute('x1', m.l);
-    line.setAttribute('y1', yy);
-    line.setAttribute('x2', W - m.r);
-    line.setAttribute('y2', yy);
-    line.setAttribute('stroke', '#e2e8f0');
-    line.setAttribute('stroke-dasharray', '3 3');
-    svg.appendChild(line);
+    const yTicks=5, xTicks=Math.min(6, Math.max(1, data.length-1));
+    const yStep=(maxY-minY)/yTicks, xStep=(maxX-minX)/xTicks;
 
-    const t = document.createElementNS(svg.namespaceURI,'text');
-    t.setAttribute('x', m.l - 6);
-    t.setAttribute('y', yy + 4);
-    t.setAttribute('text-anchor','end');
-    t.setAttribute('font-size','11');
-    t.setAttribute('fill','#334155');
-    t.textContent = v.toFixed(1);
-    svg.appendChild(t);
-  }
-
-  // Vẽ cột
-  totals.forEach((d, i) => {
-    const xx = x(i);
-    const yy = y(d.total);
-    const h  = (m.t + innerH) - yy;
-
-    const rect = document.createElementNS(svg.namespaceURI,'rect');
-    rect.setAttribute('x', xx);
-    rect.setAttribute('y', yy);
-    rect.setAttribute('width', barW);
-    rect.setAttribute('height', Math.max(0, h));
-    rect.setAttribute('rx', 4);
-    rect.setAttribute('fill', '#2563eb');
-    svg.appendChild(rect);
-
-    const label = document.createElementNS(svg.namespaceURI,'text');
-    label.setAttribute('x', xx + barW/2);
-    label.setAttribute('y', yy - 6);
-    label.setAttribute('text-anchor','middle');
-    label.setAttribute('font-size','9');
-    label.setAttribute('font-weight','500');
-    label.setAttribute('fill','#0f172a');
-    label.textContent = d.total.toFixed(1);
-    svg.appendChild(label);
-
-    const baseY = m.t + innerH + 48;
-    const tx = document.createElementNS(svg.namespaceURI,'text');
-    tx.setAttribute('x', xx + barW/2);
-    tx.setAttribute('y', baseY);
-    tx.setAttribute('text-anchor','end');
-    tx.setAttribute('font-size','11');
-    tx.setAttribute('fill','#334155');
-    tx.setAttribute('transform', `rotate(-55 ${xx + barW/2} ${baseY})`);
-    tx.textContent = d.name;
-    svg.appendChild(tx);
-  });
-
-  // Trục X (đáy)
-  const axis = document.createElementNS(svg.namespaceURI,'line');
-  axis.setAttribute('x1', m.l);
-  axis.setAttribute('y1', m.t + innerH);
-  axis.setAttribute('x2', W - m.r);
-  axis.setAttribute('y2', m.t + innerH);
-  axis.setAttribute('stroke', '#cbd5e1');
-  svg.appendChild(axis);
-}
-
-
-/* ===== AGGREGATES: sliding windows + fixed 6h blocks ===== */
-
-/* build per-station time series from pivot rows
-   returns { stationName: [{t:Date, v:Number}, ...], ... } */
-function buildSeriesFromRows(rows){
-  if(!rows?.length) return {};
-  const cols = Object.keys(rows[0]);
-  const timeCol =
-    cols.find(c => c.toLowerCase().includes('thoi') && c.toLowerCase().includes('gian')) ||
-    cols.find(c => /time|date|ngay/i.test(c)) ||
-    cols[0];
-  const stationCols = cols.filter(c => c !== timeCol);
-  const series = {};
-  for(const name of stationCols) series[name] = [];
-  for(const r of rows){
-    const tRaw = r[timeCol];
-    const t = parseTimeString(tRaw);
-    if(!t) continue;
-    for(const name of stationCols){
-      const v = safeNum(r[name]);
-      if (!isFinite(v)) continue;
-      series[name].push({ t, v });
+    // grid
+    for(let i=0;i<=yTicks;i++){
+      const y=sy(minY+i*yStep);
+      const line=document.createElementNS(svg.namespaceURI,'line');
+      line.setAttribute('x1',m.l); line.setAttribute('y1',y);
+      line.setAttribute('x2',W-m.r); line.setAttribute('y2',y);
+      line.setAttribute('stroke','#e2e8f0'); line.setAttribute('stroke-dasharray','3 3');
+      svg.appendChild(line);
     }
-  }
-  // sort each series
-  for(const k of Object.keys(series)){
-    series[k].sort((a,b)=>a.t - b.t);
-  }
-  return series;
-}
-
-/* sliding window sums using two-pointer (ascending times) */
-function slidingWindowSums(series, windowMinutes){
-  const n = series.length;
-  const sums = new Array(n).fill(0);
-  if(n===0) return sums;
-  const windowMs = windowMinutes * 60 * 1000;
-  let left = 0;
-  let curSum = 0;
-  for(let right=0; right<n; right++){
-    curSum += series[right].v;
-    while(left <= right && (series[right].t - series[left].t) >= windowMs){
-      curSum -= series[left].v;
-      left++;
+    for(let i=0;i<=xTicks;i++){
+      const x=sx(minX+i*xStep);
+      const line=document.createElementNS(svg.namespaceURI,'line');
+      line.setAttribute('x1',x); line.setAttribute('y1',m.t);
+      line.setAttribute('x2',x); line.setAttribute('y2',H-m.b);
+      line.setAttribute('stroke','#e2e8f0'); line.setAttribute('stroke-dasharray','3 3');
+      svg.appendChild(line);
     }
-    sums[right] = curSum;
-  }
-  return sums;
-}
 
-/* latest-window sum ending at endTime (useful for "Tổng 3h/6h gần nhất") */
-function latestWindowSum(series, endTime, windowMinutes){
-  if(!series || !series.length) return 0;
-  const windowMs = windowMinutes * 60 * 1000;
-  const startMs = endTime.getTime() - windowMs;
-  let sum = 0;
-  for(let i=series.length-1;i>=0;i--){
-    const t = series[i].t.getTime();
-    if (t > endTime.getTime()) continue;
-    if (t <= startMs) break;
-    sum += series[i].v;
-  }
-  return Number(sum.toFixed(1));
-}
+    // Đường quá trình (màu xanh)
+    let d=`M ${sx(data[0].x)} ${sy(data[0].y)}`;
+    for(let i=1;i<data.length;i++) d += ` L ${sx(data[i].x)} ${sy(data[i].y)}`;
+    const path=document.createElementNS(svg.namespaceURI,'path');
+    path.setAttribute('d', d); path.setAttribute('fill','none');
+    path.setAttribute('stroke','#0ea5e9'); path.setAttribute('stroke-width','2');
+    svg.appendChild(path);
 
-/* compute station aggregates (total, max sliding 1h/3h/6h, latest 3h/6h) */
-function computeStationAggregates(series, endTime){
-  const total = series.reduce((s,x)=> s + (isFinite(x.v)?x.v:0), 0);
-  const max1h = (slidingWindowSums(series,60).length ? Math.max(...slidingWindowSums(series,60)) : 0);
-  const max3h = (slidingWindowSums(series,180).length ? Math.max(...slidingWindowSums(series,180)) : 0);
-  const max6h = (slidingWindowSums(series,360).length ? Math.max(...slidingWindowSums(series,360)) : 0);
-  const latest3h = latestWindowSum(series, endTime, 180);
-  const latest6h = latestWindowSum(series, endTime, 360);
-  return {
-    total: Number(total.toFixed(1)),
-    max1h: Number(max1h.toFixed(1)),
-    max3h: Number(max3h.toFixed(1)),
-    max6h: Number(max6h.toFixed(1)),
-    latest3h,
-    latest6h
-  };
-}
+    // ===== VẼ BĐ1/BĐ2/BĐ3 (vàng/da cam/đỏ) nếu có =====
+    const lv = findBDFor(sel.name);
+    const COLORS = { bd1:'#eab308', bd2:'#f97316', bd3:'#ef4444' };
+    function drawHLine(val, color, label){
+      if(val==null || !Number.isFinite(val)) return;
+      const y = sy(val);
+      if (y < m.t-4 || y > H-m.b+4) return; // ngoài khung thì bỏ
+      const line=document.createElementNS(svg.namespaceURI,'line');
+      line.setAttribute('x1',m.l); line.setAttribute('y1',y);
+      line.setAttribute('x2',W-m.r); line.setAttribute('y2',y);
+      line.setAttribute('stroke',color); line.setAttribute('stroke-width','1.8');
+      line.setAttribute('stroke-dasharray','6 4');
+      svg.appendChild(line);
 
-/* compute fixed non-overlapping windows sums (windowMinutes), starting at startTime, until endTime */
-function computeFixedWindowSums(series, windowMinutes, startTime, endTime){
-  const results = [];
-  if(!startTime || !endTime) return results;
-  const windowMs = windowMinutes * 60 * 1000;
-  if(!Array.isArray(series)) series = [];
-  series.sort((a,b)=>a.t - b.t);
-  let curStart = new Date(startTime.getTime());
-  while (curStart.getTime() < endTime.getTime()) {
-    const curEnd = new Date(Math.min(curStart.getTime() + windowMs, endTime.getTime()));
-    let sum = 0;
-    for (let i=0;i<series.length;i++){
-      const tt = series[i].t.getTime();
-      if (tt >= curStart.getTime() && tt < curEnd.getTime()) sum += series[i].v;
-      if (tt >= curEnd.getTime()) break;
+      const tag=document.createElementNS(svg.namespaceURI,'text');
+      tag.setAttribute('x', W - m.r - 4);
+      tag.setAttribute('y', y - 4);
+      tag.setAttribute('text-anchor','end');
+      tag.setAttribute('font-size','11');
+      tag.setAttribute('font-weight','700');
+      tag.setAttribute('fill', color);
+      tag.textContent = `${label} (${val})`;
+      svg.appendChild(tag);
     }
-    results.push({ start: new Date(curStart), end: new Date(curEnd), sum: Number(sum.toFixed(1)) });
-    curStart = new Date(curStart.getTime() + windowMs);
-  }
-  return results;
-}
+    if(lv){
+      drawHLine(lv.bd1, COLORS.bd1, 'BĐ1');
+      drawHLine(lv.bd2, COLORS.bd2, 'BĐ2');
+      drawHLine(lv.bd3, COLORS.bd3, 'BĐ3');
+    }
 
-/* Render aggregates summary (as a simple table) into aggSummaryHolder */
-function renderAggregatesTable(aggregates){
-  const holder = $('#aggSummaryHolder');
-  if(!aggregates || !Object.keys(aggregates).length){
-    holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu tổng hợp.</div>';
-    $('#btnExportAgg').disabled = true;
-    return;
-  }
-  const rows = Object.keys(aggregates).map(name=>{
-    const a = aggregates[name];
-    return {
-      'Trạm': name,
-      'Tổng (mm)': a.total,
-      'Max 1h': a.max1h,
-      'Max 3h': a.max3h,
-      'Max 6h': a.max6h,
-      'Tổng 3h (gần nhất)': a.latest3h,
-      'Tổng 6h (gần nhất)': a.latest6h
-    };
-  });
-
-  // build html
-  let html = '<table class="agg-table"><thead><tr>';
-  html += '<th>Trạm</th><th>Tổng (mm)</th><th>Max 1h</th><th>Max 3h</th><th>Max 6h</th><th>Tổng 3h (gần nhất)</th><th>Tổng 6h (gần nhất)</th>';
-  html += '</tr></thead><tbody>';
-  for(const r of rows){
-    html += `<tr><td>${r['Trạm']}</td><td>${r['Tổng (mm)']}</td><td>${r['Max 1h']}</td><td>${r['Max 3h']}</td><td>${r['Max 6h']}</td><td>${r['Tổng 3h (gần nhất)']}</td><td>${r['Tổng 6h (gần nhất)']}</td></tr>`;
-  }
-  html += '</tbody></table>';
-  holder.innerHTML = html;
-
-  // save for export as CSV
-  window.__lastAgg = rows.map(r => ({ trạm: r['Trạm'], tong_mm: r['Tổng (mm)'], max1h: r['Max 1h'], max3h: r['Max 3h'], max6h: r['Max 6h'], tong3h_latest: r['Tổng 3h (gần nhất)'], tong6h_latest: r['Tổng 6h (gần nhất)'] }));
-  $('#btnExportAgg').disabled = !(window.__lastAgg && window.__lastAgg.length);
-}
-
-/* Render 6h matrix (table) into matrixHolder */
-function render6hMatrix(seriesMap, startTime, endTime){
-  const holder = $('#matrixHolder');
-  holder.innerHTML = '';
-  if(!seriesMap || !Object.keys(seriesMap).length){ holder.innerHTML = '<div style="color:#64748b">Không có dữ liệu 6h.</div>'; return; }
-
-  // build windows
-  const winMs = 6*60*60*1000;
-  const windows = [];
-  let cur = new Date(startTime.getTime());
-  while(cur.getTime() < endTime.getTime()){
-    const nxt = new Date(Math.min(cur.getTime() + winMs, endTime.getTime()));
-    windows.push({ start: new Date(cur), end: new Date(nxt) });
-    cur = new Date(cur.getTime() + winMs);
-  }
-
-  // build table
-  const table = document.createElement('table');
-  table.className = 'rain-table agg-table';
-  const thead = document.createElement('thead');
-  const headRow = document.createElement('tr');
-  headRow.appendChild(document.createElement('th')).textContent = 'Tên trạm';
-  for(const w of windows){
-    const dt = w.start;
-    const label = `${pad(dt.getHours())}h Ngày ${pad(dt.getDate())}/${pad(dt.getMonth()+1)}`;
-    const th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
-  }
-  thead.appendChild(headRow);
-  table.appendChild(thead);
-
-  const tbody = document.createElement('tbody');
-  for(const name of Object.keys(seriesMap)){
-    const row = document.createElement('tr');
-    const tdName = document.createElement('td'); tdName.className='time'; tdName.textContent = name; row.appendChild(tdName);
-    const series = seriesMap[name] || [];
-    for(const w of windows){
-      let sum = 0;
-      for(let i=0;i<series.length;i++){
-        const tt = series[i].t.getTime();
-        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
-        if(tt >= w.end.getTime()) break;
+    // Nhãn trục X
+    function labelAt(xv){
+      if(xType==='time'){
+        let lo=0, hi=xValues.length-1;
+        while(hi-lo>1){ const mid=(lo+hi)>>1; (xValues[mid]<xv) ? (lo=mid):(hi=mid); }
+        const idx=(Math.abs(xValues[lo]-xv)<=Math.abs(xValues[hi]-xv))?lo:hi;
+        const raw=xLabels[idx]||'';
+        const m=/\b(\d{2}):(\d{2})/.exec(String(raw));
+        return m?`${m[1]}:${m[2]}`:String(raw);
+      } else {
+        const i=Math.round(xv);
+        return xLabels[i] || `#${i+1}`;
       }
-      const td = document.createElement('td'); td.textContent = sum ? sum.toFixed(1) : '0.0'; row.appendChild(td);
     }
-    tbody.appendChild(row);
+    for(let i=0;i<=xTicks;i++){
+      const xv=minX+i*xStep, x=sx(xv);
+      const t=document.createElementNS(svg.namespaceURI,'text');
+      t.setAttribute('x',x); t.setAttribute('y',H-6);
+      t.setAttribute('text-anchor','middle'); t.setAttribute('font-size','11'); t.setAttribute('fill','#334155');
+      t.textContent=labelAt(xv);
+      svg.appendChild(t);
+    }
+    for(let i=0;i<=yTicks;i++){
+      const yv=minY+i*yStep, y=sy(yv);
+      const t=document.createElementNS(svg.namespaceURI,'text');
+      t.setAttribute('x',m.l-6); t.setAttribute('y',y+4);
+      t.setAttribute('text-anchor','end'); t.setAttribute('font-size','11'); t.setAttribute('fill','#334155');
+      t.textContent=yv.toFixed(2);
+      svg.appendChild(t);
+    }
   }
-  table.appendChild(tbody);
-  holder.appendChild(table);
 
-  // prepare CSV rows: wide form (trạm + columns)
-  const csvRows = [];
-  for(const name of Object.keys(seriesMap)){
-    const series = seriesMap[name] || [];
-    const obj = { trạm: name };
-    windows.forEach((w, idx) => {
-      const key = `${pad(w.start.getHours())}h_${pad(w.start.getDate())}_${pad(w.start.getMonth()+1)}`;
-      let sum = 0;
-      for(let i=0;i<series.length;i++){
-        const tt = series[i].t.getTime();
-        if(tt >= w.start.getTime() && tt < w.end.getTime()) sum += series[i].v;
-        if(tt >= w.end.getTime()) break;
-      }
-      obj[key] = sum ? sum.toFixed(1) : '0.0';
+  // Nút chọn series
+  series.forEach(s=>{
+    const b=document.createElement('button');
+    b.textContent=s.name;
+    b.style.cssText='padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;font-size:13px;cursor:pointer';
+    b.addEventListener('click',()=>{
+      selected=s.name;
+      [...bar.children].forEach(x=>{ x.style.background='#f8fafc'; x.style.color='initial'; });
+      b.style.background='#2563eb'; b.style.color='#fff';
+      draw();
     });
-    csvRows.push(obj);
-  }
-  window.__last6hMatrix = { windows, rows: csvRows };
+    bar.appendChild(b);
+  });
+  if(bar.firstChild){ bar.firstChild.click(); } else { draw(); }
 
-  // also create flat blocks for download if needed
-  const flat = [];
-  for(const name of Object.keys(seriesMap)){
-    const blocks = computeFixedWindowSums(seriesMap[name], 360, startTime, endTime);
-    for(const b of blocks){
-      flat.push({ trạm: name, window_start: b.start.toISOString().replace('T',' ').slice(0,19), window_end: b.end.toISOString().replace('T',' ').slice(0,19), sum_mm: b.sum });
-    }
+  const ro = new ResizeObserver(()=>draw());
+  ro.observe($('#chartBox'));
+}
+
+/* ===== DETAIL SUMMARY BUILD + RENDER (ADDED) ===== */
+function fmt(v, d=2){ if(v==null || Number.isNaN(v)) return ''; return Number(v).toFixed(d); }
+
+function buildDetailSummaryRows(stationsList, datasets){
+  const bdmap = window.__BD_MAP || new Map();
+  const rows = [];
+  for(const s of stationsList){
+    const name = s.tentram || s.matram;
+    const data = datasets[name] || datasets[s.matram] || [];
+    const pts = data.map(r=>{
+      const t = TIME_KEYS.map(k=>r[k]).find(x=>x!==undefined);
+      const v = VALUE_KEYS.map(k=>r[k]).find(x=>x!==undefined);
+      return {t: normTime(t), v: toNum(v)};
+    }).filter(p=>p.t && !Number.isNaN(p.v)).sort((a,b)=>parseTimeMaybe(a.t)-parseTimeMaybe(b.t));
+    const lastN = 7;
+    const lastSlice = pts.slice(Math.max(0, pts.length-lastN));
+    const lastVals = lastSlice.map(x=>x.v);
+    const lastTimes = lastSlice.map(x=>x.t);
+    const lastVal = lastVals.length? lastVals[lastVals.length-1] : null;
+    const bd = (function(){
+      const found = findBDFor(name);
+      return found || {bd1:null,bd2:null,bd3:null};
+    })();
+    const ssb1 = (lastVal!=null && bd.bd1!=null)? (lastVal - bd.bd1) : null;
+    const ssb2 = (lastVal!=null && bd.bd2!=null)? (lastVal - bd.bd2) : null;
+    const ssb3 = (lastVal!=null && bd.bd3!=null)? (lastVal - bd.bd3) : null;
+    let state = '';
+    let cls = '';
+    if(lastVal==null){ state='No data'; cls=''; }
+    else if(bd.bd3!=null && lastVal >= bd.bd3){ state='Vượt BĐ3'; cls='danger'; }
+    else if(bd.bd2!=null && lastVal >= bd.bd2){ state='Vượt BĐ2'; cls='warn'; }
+    else if(bd.bd1!=null && lastVal >= bd.bd1){ state='Vượt BĐ1'; cls='warn'; }
+    else { state='Bình thường'; cls='ok'; }
+    rows.push({
+      tentram: name,
+      bd1: bd.bd1, bd2: bd.bd2, bd3: bd.bd3,
+      lastVals, lastTimes, lastVal, ssb1, ssb2, ssb3, state, cls
+    });
   }
-  window.__last6hBlocks = flat;
+  return rows;
+}
+
+function renderDetailTable(){
+  const stationsList = window.__STATIONS_LIST || stations;
+  const datasets = window.__LAST_DATASETS || {};
+  const rows = buildDetailSummaryRows(stationsList, datasets);
+
+  // compute global recent timestamps across datasets (up to 7)
+  const allTimes = [];
+  Object.values(datasets).forEach(arr=>{
+    arr.forEach(r=>{
+      const t = pickField(r, TIME_KEYS);
+      if(t) allTimes.push(normTime(t));
+    });
+  });
+  const uniqTimes = Array.from(new Set(allTimes)).sort((a,b)=>parseTimeMaybe(a)-parseTimeMaybe(b));
+  const lastTimesGlobal = uniqTimes.slice(Math.max(0, uniqTimes.length-7));
+
+  // header
+  let hdr = '<tr><th>Trạm thủy văn</th><th>I</th><th>II</th><th>III</th>';
+  for(const t of lastTimesGlobal) hdr += `<th style="min-width:64px">${t}</th>`;
+  hdr += '<th>SSB1</th><th>SSB2</th><th>SSB3</th><th>Hiện trạng</th></tr>';
+  document.getElementById('detailHead').innerHTML = hdr;
+
+  // body
+  const tbody = document.getElementById('detailBody'); tbody.innerHTML = '';
+  for(const r of rows){
+    const tr = document.createElement('tr');
+    let html = `<td class="station">${r.tentram}</td>`;
+    html += `<td>${fmt(r.bd1)}</td><td>${fmt(r.bd2)}</td><td>${fmt(r.bd3)}</td>`;
+    for(const t of lastTimesGlobal){
+      const idx = r.lastTimes.indexOf(t);
+      const v = idx>=0 ? r.lastVals[idx] : '';
+      html += `<td>${v!==''?fmt(v):''}</td>`;
+    }
+    html += `<td>${r.ssb1!=null?fmt(r.ssb1):''}</td>`;
+    html += `<td>${r.ssb2!=null?fmt(r.ssb2):''}</td>`;
+    html += `<td>${r.ssb3!=null?fmt(r.ssb3):''}</td>`;
+    const badge = r.cls ? `<span class="badge ${r.cls}">${r.state}</span>` : r.state;
+    html += `<td>${badge}</td>`;
+    tr.innerHTML = html;
+    tbody.appendChild(tr);
+  }
+  window.__DETAIL_ROWS = rows;
 }
 
 /* ===== MAIN FLOW ===== */
@@ -934,8 +793,9 @@ async function init(){
     if(!indices.length){ alert('Hãy chọn ít nhất 1 trạm.'); return; }
 
     const tinhtong=$('#tinhtong').checked?1:0;
-
-    // giữ nguyên giờ:phút do người dùng chọn (theo yêu cầu)
+    if(tinhtong===1){ s.setHours(0,0,0,0); e.setHours(23,59,0,0);
+      $('#startDt').value=toLocalDT(s); $('#endDt').value=toLocalDT(e);
+    }
     const fmt=(dt)=>`${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}:00`;
     const sStr=fmt(s), eStr=fmt(e);
 
@@ -943,7 +803,7 @@ async function init(){
     $('#summary').textContent='Đang lấy dữ liệu…';
     await Promise.all(indices.map(async idx=>{
       const r=stations[idx];
-      const ten_table=($('#tenTable').value.trim()||r.Tab||'mucnuoc_oday'); // tuỳ Excel
+      const ten_table=($('#tenTable').value.trim()||r.Tab||'mucnuoc_oday');
       const sophut=Number($('#sophut').value||r.sophut||60)||60;
       const params={ matram:r.matram, ten_table, sophut:String(sophut), tinhtong:String(tinhtong),
                      thoigianbd:quote(sStr), thoigiankt:quote(eStr) };
@@ -958,7 +818,12 @@ async function init(){
       }
     }));
 
-    // pivot theo thời gian
+    // lưu datasets & stations global để phần tổng hợp dùng
+    window.__LAST_DATASETS = datasets;
+    window.__STATIONS_LIST = stations;
+    try{ localStorage.setItem('__LAST_DATASETS_JSON', JSON.stringify(datasets)); }catch(e){/* ignore storage errors */ }
+
+    // pivot theo thời gian (giữ nguyên)
     const timeIndex=new Map();
     const names=Object.keys(datasets);
     for(const n of names){
@@ -974,47 +839,40 @@ async function init(){
       .sort((a,b)=>String(a['thoi gian']).localeCompare(String(b['thoi gian'])));
     renderTable(rows);
 
-    // ---- aggregates ----
-    if($('#showAggregates').checked){
-      const seriesMap = buildSeriesFromRows(rows);
-      const aggs = {};
-      for(const name of Object.keys(seriesMap)){
-        aggs[name] = computeStationAggregates(seriesMap[name], e);
-      }
-      renderAggregatesTable(aggs);
-
-      // render matrix 6h-blocks (non-overlapping starting from startDt)
-      render6hMatrix(seriesMap, s, e);
-
-      // show agg area
-      $('#aggArea').style.display = 'block';
-    } else {
-      $('#aggArea').style.display = 'none';
-      $('#btnExportAgg').disabled = true;
-    }
+    // cập nhật bảng tổng hợp chi tiết (mới thêm) — không làm thay đổi giao diện gốc
+    initBDLevels();
+    renderDetailTable();
+    $('#summary').textContent='Hoàn tất lấy dữ liệu.';
   });
 
   $('#btnClear').addEventListener('click', ()=>{
     $('#thead').innerHTML=''; $('#tbody').innerHTML='';
-    $('#tfoot').innerHTML='';
+    $('#detailHead').innerHTML = '<tr><th>Trạm thủy văn</th><th>I</th><th>II</th><th>III</th><th>SSB1</th><th>SSB2</th><th>SSB3</th><th>Hiện trạng</th></tr>';
+    $('#detailBody').innerHTML='';
     $('#summary').textContent='Đã xoá kết quả.';
     $('#btnExport').disabled=true; $('#btnExportXlsx').disabled=true;
     renderChart([]);
-    $('#aggArea').style.display = 'none';
-    $('#btnExportAgg').disabled = true;
   });
 
   // Export
   $('#btnExport').addEventListener('click', ()=> downloadCSV(window.__lastRows||[]));
   $('#btnExportXlsx').addEventListener('click', ()=> downloadXLSX(window.__lastRows||[]));
-  $('#btnExportAgg').addEventListener('click', ()=> {
-    const rows = window.__lastAgg || [];
-    if(rows && rows.length) downloadCSV(rows, 'rain_tonghop.csv');
-    else alert('Không có dữ liệu tổng hợp.');
-  });
+
+  // Khởi tạo map ngưỡng BĐ từ bảng cảnh báo
+  initBDLevels();
 
   try{ await tryAutoLoadExcel(); }
   catch(e){ $('#xlsxStatus').className='status'; $('#xlsxStatus').textContent='Không tìm thấy file mặc định. Hãy chọn file .xlsx thủ công.'; }
+
+  // nếu có cached datasets, nạp vào detail table
+  try{
+    const ds = localStorage.getItem('__LAST_DATASETS_JSON');
+    if(ds){
+      window.__LAST_DATASETS = JSON.parse(ds);
+      window.__STATIONS_LIST = stations;
+      renderDetailTable();
+    }
+  }catch(e){}
 }
 window.addEventListener('DOMContentLoaded', init);
 </script>
