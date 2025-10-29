@@ -550,14 +550,14 @@ function renderChart(rows){
   });
 
   /* ========== CONFIG TÙY CHỈNH NHỎ (ANH CÓ THỂ THAY) ========== */
-  const ADJUST_PIXELS = 15;          // <--- thay giá trị này (âm kéo tiêu đề/line sang trái)
+  const ADJUST_PIXELS = -12;          // <--- thay giá trị này (âm kéo tiêu đề/line sang trái)
   const BAR_LABEL_FONT_SIZE = 9;      // font size cho chữ trên đỉnh cột (số)
   /* ========================================================= */
 
   // --- Tiêu đề và dòng thời gian (thêm phần hiển thị ngay trong chartInner) ---
   const title = document.createElement('div');
   title.style.cssText='font-size:13px;color:#0f172a;font-weight:800;margin-bottom:6px';
-  title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
+  title.textContent='...............................................................................Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
   // Dòng khoảng thời gian (màu xanh nước biển, đậm hơn)
@@ -568,7 +568,7 @@ function renderChart(rows){
     const t1 = new Date(startVal);
     const t2 = new Date(endVal);
     const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    const txt = `Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
+    const txt = `........................................................................................Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
     range = document.createElement('div');
     range.style.cssText='font-size:11px;color:#1e3a8a;font-weight:700;margin-bottom:10px';
     range.textContent = txt;
