@@ -107,6 +107,9 @@
     .agg-table th,.agg-table td{padding:7px 8px;border-bottom:1px solid #eef2f6;text-align:left;font-size:13px}
     .agg-table thead th{background:#f8fafc;font-weight:800}
 
+    /* --- Dòng hiển thị khoảng thời gian: xanh nước biển & in đậm --- */
+    .range-text{ color:#1e40af; font-weight:800; margin-bottom:8px; font-size:12px; }
+
     @media (max-width:1100px){
       .shell{grid-template-columns:1fr}
       .toolbar{top:calc(64px + 8px)}
@@ -475,7 +478,7 @@ function renderTable(rows){
 }
 
 /* ===== PIVOT BY TIME ===== */
-function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='' ) return row[k]; } }
+function pickField(row, keys){ for(const k of keys){ if(row[k]!==undefined && row[k]!==null && row[k]!=='') return row[k]; } }
 const TIME_KEYS=['thoigian','Thoigian','thoigian_SL','Thoigian_SL','ThoiGian','ThoiGian_SL','time','datetime','date','Ngay','NgayGio','ngaygio'];
 const VALUE_KEYS=['solieu','SoLieu','Solieu','GiaTri','giatri','mucnuoc','MucNuoc','value','LuongMua','luongmua','Mua'];
 const normTime=t=> (t==null?'':String(t).trim().replace('T',' '));
@@ -525,7 +528,7 @@ function parseTimeString(t){
   return isNaN(d2.getTime())? null : d2;
 }
 
-/* ===== ĐỒ THỊ CỘT: Tổng lượng mưa theo trạm ===== */
+/* ===== ĐÃ CHỈNH renderChart(rows) để trục trái thẳng hàng với lề dòng thời gian ===== */
 function renderChart(rows){
   const host = $('#chartInner');
   host.innerHTML = '';
@@ -549,7 +552,7 @@ function renderChart(rows){
   if (!stationCols.length){
     const div=document.createElement('div');
     div.style.cssText='font-size:12px;color:#64748b';
-    div.textContent='Không tìm thấy cột trạm để tính tổng.';
+    div.textContent = 'Không tìm thấy cột trạm để tính tổng.';
     host.appendChild(div);
     return;
   }
@@ -569,7 +572,7 @@ function renderChart(rows){
   title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
-  // --- DÒNG HIỂN THỊ KHOẢNG THỜI GIAN (BỔ SUNG) ---
+  // Dòng hiển thị khoảng thời gian (giữ nguyên)
   const startVal = $('#startDt') ? $('#startDt').value : '';
   const endVal = $('#endDt') ? $('#endDt').value : '';
   let rangeText = '';
@@ -580,15 +583,20 @@ function renderChart(rows){
   }
   if(rangeText){
     const rng = document.createElement('div');
-    rng.style.cssText='font-size:12px;color:#475569;margin-bottom:8px';
+    rng.className = 'range-text';
     rng.textContent = rangeText;
     host.appendChild(rng);
   }
-  // --- end range ---
+
+  // --- CHÍNH: đặt trục trái thẳng hàng với lề nội dung ---
+  // axisX là vị trí trục X trái trong hệ toạ độ SVG (0 => thẳng hàng với lề trái nội dung)
+  const axisX = 0;      // đặt 0 để thẳng hàng với lề trái của host
+  const extraRightForYAxisLabels = 6; // dịch nhãn Y sang phải một chút để nhìn rõ
+  // m dùng cho tính toán phần vẽ (tương tự cũ) nhưng m.l = axisX
+  const m = { l: axisX, r:16, t:12, b:90 };
 
   const W =  Math.max(600, host.clientWidth || 800);
   const H = 260;
-  const m = { l:50, r:16, t:12, b:90 };
   const innerW = W - m.l - m.r;
   const innerH = H - m.t - m.b;
 
@@ -612,7 +620,8 @@ function renderChart(rows){
     const v = (maxY / ticks) * i;
     const yy = y(v);
     const line = document.createElementNS(svg.namespaceURI,'line');
-    line.setAttribute('x1', m.l);
+    // bắt đầu lưới từ ngay trục (axisX)
+    line.setAttribute('x1', axisX);
     line.setAttribute('y1', yy);
     line.setAttribute('x2', W - m.r);
     line.setAttribute('y2', yy);
@@ -621,9 +630,10 @@ function renderChart(rows){
     svg.appendChild(line);
 
     const t = document.createElementNS(svg.namespaceURI,'text');
-    t.setAttribute('x', m.l - 6);
+    // vẽ chữ số Y ở bên phải trục để không bị cắt
+    t.setAttribute('x', axisX + extraRightForYAxisLabels);
     t.setAttribute('y', yy + 4);
-    t.setAttribute('text-anchor','end');
+    t.setAttribute('text-anchor','start');
     t.setAttribute('font-size','11');
     t.setAttribute('fill','#334155');
     t.textContent = v.toFixed(1);
@@ -668,9 +678,9 @@ function renderChart(rows){
     svg.appendChild(tx);
   });
 
-  // Trục X (đáy)
+  // Trục X (đáy) bắt đầu tại axisX
   const axis = document.createElementNS(svg.namespaceURI,'line');
-  axis.setAttribute('x1', m.l);
+  axis.setAttribute('x1', axisX);
   axis.setAttribute('y1', m.t + innerH);
   axis.setAttribute('x2', W - m.r);
   axis.setAttribute('y2', m.t + innerH);
