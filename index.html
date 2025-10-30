@@ -143,6 +143,14 @@
 
   <!-- XLSX reader -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+/* Override: toolbar không còn sticky -> sẽ cuộn theo trang (không che bảng) */
+.card.toolbar {
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+}
+</style>
 </head>
 <body>
 <header>
@@ -568,7 +576,7 @@ function renderChart(rows){
   // --- Tiêu đề và dòng thời gian (thêm phần hiển thị ngay trong chartInner) ---
   const title = document.createElement('div');
   title.style.cssText='font-size:13px;color:#1e3a8a;font-weight:700;margin-bottom:6px';
-  title.textContent='Đồ thị tổng lượng mưa theo trạm (mm).';
+  title.textContent='...................................................................................Đồ thị tổng lượng mưa theo trạm (mm).';
   host.appendChild(title);
 
   // Dòng khoảng thời gian (màu xanh nước biển, đậm hơn)
@@ -579,7 +587,7 @@ function renderChart(rows){
     const t1 = new Date(startVal);
     const t2 = new Date(endVal);
     const f = d => `${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')} ngày ${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
-    const txt = `Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
+    const txt = `..................................................................................................Thời gian tính từ ${f(t1)} đến ${f(t2)}.`;
     range = document.createElement('div');
     range.style.cssText='font-size:11px;color:#1e3a8a;font-weight:700;margin-bottom:10px';
     range.textContent = txt;
