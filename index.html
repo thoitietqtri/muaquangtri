@@ -184,6 +184,13 @@
     <!-- Chọn trạm & thời gian -->
     <div class="section">
       <h3 class="section-title">Chọn trạm & thời gian</h3>
+
+      <!-- ===== NEW: Checkbox chọn/bỏ chọn tất cả ===== -->
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <input type="checkbox" id="selectAllStations" />
+        <span style="font-size:13px;color:#334155;font-weight:700">Chọn tất cả trạm</span>
+      </label>
+
       <label>Chọn các trạm (Giữ Ctrl/Shift để chọn nhiều)</label>
       <select id="multiSelect" multiple size="10" style="height:240px"></select>
       <div class="status" style="color:var(--muted)">Mặc định chọn 4 trạm đầu tiên. Chọn nhiều trạm: bảng sẽ có thanh kéo ngang.</div>
@@ -381,7 +388,10 @@ function fillStationSelects(){
     o.value=i; o.textContent=(r.tentram||'(không tên)').trim();
     box.appendChild(o);
   });
-for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
+  // Mặc định: chọn tất cả (giữ hành vi cũ). Đồng thời đồng bộ checkbox "selectAllStations"
+  const selAll = $('#selectAllStations');
+  for(let i=0;i<box.options.length;i++){ box.options[i].selected = true; }
+  if (selAll) selAll.checked = true;
 }
 
 /* ====== MÀU THEO NGƯỠNG + HÀNG TỔNG ====== */
@@ -722,8 +732,6 @@ function renderChart(rows){
   svg.appendChild(axis);
 
   // ========== Căn chỉnh chủ động: kéo title + range sao cho thẳng hàng với trục Y ==========
-  // Tính vị trí mong muốn (margin-left) của title/range trong host (host nằm bên trong chartBox).
-  // Ta muốn: left of title = left of chart drawing origin = chartBox's padding-left + m.l
   try {
     const cb = document.getElementById('chartBox');
     let cbPL = chartBoxPaddingLeft;
@@ -1000,6 +1008,7 @@ async function init(){
   }
 
   $('#btnAutoXlsx').addEventListener('click', async ()=>{
+
     try{ await tryAutoLoadExcel(); }catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; }
   });
   $('#fileXlsx').addEventListener('change', async ev=>{
@@ -1007,6 +1016,30 @@ async function init(){
     try{ const ab=await f.arrayBuffer(); const wb=XLSX.read(ab,{type:'array'}); loadFromWorkbook(wb); }
     catch(e){ $('#xlsxStatus').className='status err'; $('#xlsxStatus').textContent=e.message; }
   });
+
+  /* ===== NEW: Select All checkbox logic ===== */
+  const selectAllEl = $('#selectAllStations');
+  const multiSelectEl = $('#multiSelect');
+
+  // when checkbox change -> (de)select all options
+  if (selectAllEl && multiSelectEl) {
+    selectAllEl.addEventListener('change', () => {
+      const checked = selectAllEl.checked;
+      for (let i = 0; i < multiSelectEl.options.length; i++) {
+        multiSelectEl.options[i].selected = checked;
+      }
+    });
+
+    // when user changes selection manually, update the checkbox state
+    multiSelectEl.addEventListener('change', () => {
+      const opts = multiSelectEl.options;
+      let all = true;
+      for (let i = 0; i < opts.length; i++) {
+        if (!opts[i].selected) { all = false; break; }
+      }
+      selectAllEl.checked = all;
+    });
+  }
 
   $('#btnFetch').addEventListener('click', async ()=>{
     if(!stations.length){ alert('Chưa nạp danh sách trạm từ Excel.'); return; }
